@@ -1,8 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { Part } from "../../elements";
-import { complement, partFactory } from "../../parser";
-import { annotationFactory } from "../../sequence";
+import { Annotation, Part } from "../elements";
+import { complement } from "../parser";
 
 /**
  * SBOL v2.0 schema definition can be found at: http://sbolstandard.org/wp-content/uploads/2016/06/SBOL-data-model-2.2.1.pdf
@@ -26,7 +25,7 @@ const first = elArr => {
  * representation of a part(s). an example of this type of file can be
  * found in ../examples/j5.SBOL.xml
  */
-export default async (sbol, fileName, _: string[] = []): Promise<Part[]> =>
+export default async (sbol: string, fileName: string): Promise<Part[]> =>
   new Promise((resolve, reject) => {
     // util reject function that will be triggered if any fields fail
     const rejectSBOL = errType => reject(new Error(`Failed on SBOLv2 file: ${errType}`));
@@ -63,18 +62,17 @@ export default async (sbol, fileName, _: string[] = []): Promise<Part[]> =>
         }
 
         // it's a collection of DnaComponents, parse each to a part
-        const partList = [];
+        const partList: Part[] = [];
         ComponentDefinition.forEach((c, i) => {
           // we're only making parts out of those with seq info
           if (!c.sequence || !c.sequence.length) {
             return;
           }
 
-          const { description, displayId, sequence, sequenceAnnotation } = c;
+          const { displayId, sequence, sequenceAnnotation } = c;
           const name = first(displayId) || `${fileName}_${i + 1}`;
-          const note = first(description) || "";
 
-          const annotations = [];
+          const annotations: Annotation[] = [];
           (sequenceAnnotation || []).forEach(({ SequenceAnnotation }) => {
             const ann = SequenceAnnotation[0];
             const annId = first(ann.displayId);
@@ -82,15 +80,8 @@ export default async (sbol, fileName, _: string[] = []): Promise<Part[]> =>
 
             const range = Range[0];
             annotations.push({
-              ...annotationFactory(annId),
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
               end: first(range.end) - 1,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
               name: annId,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
               start: first(range.start) - 1,
             });
           });
@@ -110,21 +101,10 @@ export default async (sbol, fileName, _: string[] = []): Promise<Part[]> =>
             const seqInput = first(partSeq.elements) || "";
             const { compSeq, seq } = complement(seqInput);
             partList.push({
-              ...partFactory(),
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'never[]' is not assignable to type 'never'.
               annotations,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'never'.
               compSeq,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
               name,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
-              note,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'never'.
+              primers: [],
               seq,
             });
           }

@@ -16,7 +16,7 @@ npm version "$1" --git-tag-version
 # build the package
 npm run build
 
-# git commit
+# git commit the version bump
 git add .
 git commit --amend -C HEAD
 

@@ -1,4 +1,4 @@
-export default async (text, fileName) => {
+export default async (text: string, fileName: string) => {
   // partFactory returns a negative "circular" prop, we assume they're all linear
 
   if (text.trim().startsWith(">")) {

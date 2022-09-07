@@ -1,9 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { colorByIndex } from "../../colors";
-import { Part } from "../../elements";
-import { complement, partFactory } from "../../parser";
-import randomid from "../../randomid";
+import { Annotation, Part } from "../elements";
+import { complement, partFactory } from "../parser";
 
 /*
   <sbol:Sequence rdf:about="https://synbiohub.cidarlab.org/public/Demo/A1_sequence/1">
@@ -66,9 +64,9 @@ const dnaComponentToPart = (DnaComponent, options) => {
   if (!parsedSeq) return null;
 
   // attempt to parse the SBOL annotations into our version of annotations
-  const annotations = [];
+  const annotations: Annotation[] = [];
   if (annotation) {
-    annotation.forEach(({ SequenceAnnotation }, i) => {
+    annotation.forEach(({ SequenceAnnotation }) => {
       if (!SequenceAnnotation || !SequenceAnnotation[0]) return;
 
       const { bioStart = [{}], bioEnd = [{}], strand, subComponent } = SequenceAnnotation[0];
@@ -76,27 +74,12 @@ const dnaComponentToPart = (DnaComponent, options) => {
         const { type: annType = [{}], displayId: annId = [{}], name: annName = [{}] } = subComponent[0].DnaComponent[0];
 
         annotations.push({
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'never'.
-          color: colorByIndex(i),
-
           // we're 0-based
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
           direction: strand[0]._ === "+" ? 1 : -1,
-
           // sbol is 1-based
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
           end: bioEnd[0]._ || 0,
-
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'never'.
-          id: randomid(),
-
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
           name: annName[0]._ || annId[0]._ || "Untitled",
-
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
           start: bioStart[0]._ - 1 || 0,
-
-          // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
           type: annType[0]._ || "N/A",
         });
       }
@@ -177,7 +160,7 @@ const findSequenceNodes = (acc, doc) => {
  * representation of a part(s). an example of this type of file can be
  * found in ../examples/j5.SBOL.xml
  */
-export default async (sbol, colors: string[] = []): Promise<Part[]> =>
+export default async (sbol: string): Promise<Part[]> =>
   new Promise((resolve, reject) => {
     // it shouldn't take longer than this to parse the SBOL file
     setTimeout(() => {
@@ -214,7 +197,6 @@ export default async (sbol, colors: string[] = []): Promise<Part[]> =>
                 partList.push(
                   // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ seq: string; compSeq: string; ... Remove this comment to see the full error message
                   dnaComponentToPart(nestedDnaComponent[0], {
-                    colors: colors,
                     file: sbol,
                     strict: false,
                   })
@@ -228,7 +210,6 @@ export default async (sbol, colors: string[] = []): Promise<Part[]> =>
         } else if (DnaComponent && DnaComponent.length) {
           // create a single part from the single one passed
           const validPart = dnaComponentToPart(DnaComponent[0], {
-            colors: colors,
             file: sbol,
             strict: false,
           });
@@ -244,7 +225,6 @@ export default async (sbol, colors: string[] = []): Promise<Part[]> =>
         const attemptedParts = dnaComponentAccumulator
           .map(p =>
             dnaComponentToPart(p, {
-              colors: colors,
               file: sbol,
               strict: true,
             })

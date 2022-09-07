@@ -1,10 +1,9 @@
-import { Part } from "../../elements";
-import { complement, directionality, partFactory } from "../../parser";
-import randomid from "../../randomid";
+import { Part } from "../elements";
+import { complement, directionality, partFactory } from "../parser";
 
 /**
  * Benchling format is just JSON. Besides a slight diff in seq naming and annotation directionality,
- * Benchling's model matches seqviz's
+ * the model matches seqparse's
  */
 export default async (text: string): Promise<Part[]> => {
   const partJSON = JSON.parse(text);
@@ -21,7 +20,6 @@ export default async (text: string): Promise<Part[]> => {
       annotations: partJSON.annotations.map(a => ({
         ...a,
         direction: directionality(a.strand),
-        id: randomid(),
       })),
       compSeq: compSeq,
       name: partJSON.name || partJSON._id,

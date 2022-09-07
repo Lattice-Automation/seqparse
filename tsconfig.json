@@ -3,7 +3,7 @@
     "allowJs": false, // allow a partial TypeScript and JavaScript codebase
     "allowUnreachableCode": false,
     "declaration": true,
-    "lib": ["es2015"], // https://marcobotto.com/blog/compiling-and-bundling-typescript-libraries-with-webpack/
+    "lib": ["es2015", "dom"], // https://marcobotto.com/blog/compiling-and-bundling-typescript-libraries-with-webpack/
     "module": "commonjs", // specify module code generation
     "moduleResolution": "node",
     "noUnusedLocals": true,
@@ -15,7 +15,6 @@
     "strictPropertyInitialization": true,
     "target": "es5", // specify ECMAScript target version
     "types": [
-      "browser",
       "node",
       "jest"
     ],

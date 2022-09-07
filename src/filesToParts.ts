@@ -1,8 +1,7 @@
 import * as path from "path";
 
-import { COLORS } from "../colors";
-import { Part } from "../elements";
-import { complement, partFactory } from "../parser";
+import { Part } from "./elements";
+import { complement, partFactory } from "./parser";
 import parseBenchling from "./parsers/benchling";
 import parseBioBrick from "./parsers/biobrick";
 import parseFASTA from "./parsers/fasta";
@@ -24,14 +23,14 @@ export interface FileOptions {
  */
 export default async (
   files: string | string[] | File | File[],
-  options: FileOptions = { backbone: "", colors: COLORS, fileName: "" }
+  options: FileOptions = { fileName: "" }
 ): Promise<Part[]> => {
   const partLists: Promise<Part[]>[] = [];
-  const { fileName = "", colors = [], backbone = "" } = options;
+  const { fileName = "" } = options;
 
   // if it's just a single file string
   if (typeof files === "string") {
-    partLists.push(fileToParts(files, { backbone, colors, fileName }));
+    partLists.push(fileToParts(files, { fileName }));
   } else {
     if (!Array.isArray(files)) {
       files = [files];
@@ -78,11 +77,8 @@ export default async (
  * Takes in a file, in string format, figures out which type of file it is,
  * converts the file into a part, and returns the part
  */
-const fileToParts = async (
-  file: string | ArrayBuffer,
-  options: FileOptions = { backbone: "", colors: [], fileName: "" }
-): Promise<Part[]> => {
-  const { fileName = "", colors = [], backbone = "" } = options;
+const fileToParts = async (file: string | ArrayBuffer, options: FileOptions = { fileName: "" }): Promise<Part[]> => {
+  const { fileName = "" } = options;
   const sourceName = fileName.split(path.sep).pop() || fileName;
   const source = {
     file: file instanceof ArrayBuffer ? "" : file,
@@ -98,7 +94,7 @@ const fileToParts = async (
     if (fileName.endsWith(".dna")) {
       // SnapGene; first because it's a buffer, not string
       // it will fail for some string methods below
-      return (await parseSnapgene(file, { colors, fileName })).map(p => cleanupPart(p, source));
+      return (await parseSnapgene(file, { fileName })).map(p => cleanupPart(p, source));
     } else {
       throw Error("Unrecognized file type, ArrayBuffer but not a Snapgene file (.dna)");
     }
@@ -116,13 +112,12 @@ const fileToParts = async (
   let parts: Part[];
 
   // another edge case check for whether the part is a JSON part from Benchling
-  // just a heuristic that says 1) yes it can be parsed 2) it conaints a list of
+  // just a heuristic that says 1) yes it can be parsed 2) it contains a list of
   // fields that are common to Benchling files
   let isBenchling = false;
   try {
     const benchlingJSON = JSON.parse(fileString); // will err out if not JSON
-    const benchlingJSONKeys = Object.keys(benchlingJSON);
-    if (["bases", "annotations", "primers"].every(k => benchlingJSONKeys.includes(k))) {
+    if (["bases", "annotations", "primers"].every(k => typeof benchlingJSON[k] !== "undefined")) {
       isBenchling = true;
     }
   } catch (ex) {
@@ -154,19 +149,19 @@ const fileToParts = async (
       case fileName.endsWith(".gbk"):
       case fileName.endsWith(".genbank"):
       case fileName.endsWith(".ape"):
-        parts = await parseGenbank(fileString, fileName, colors);
+        parts = await parseGenbank(fileString, fileName);
         break;
 
       // SeqBuilder
       case fileString.includes("Written by SeqBuilder"):
       case fileName.endsWith(".sbd"):
-        parts = await parseSeqBuilder(fileString, fileName, colors);
+        parts = await parseSeqBuilder(fileString, fileName);
         break;
 
       // BioBrick XML
       case fileString.includes("Parts from the iGEM"):
       case fileString.includes("<part_list>"):
-        parts = await parseBioBrick(fileString, { backbone, colors });
+        parts = await parseBioBrick(fileString);
         break;
 
       // Benchling JSON
@@ -176,13 +171,13 @@ const fileToParts = async (
 
       // SBOL
       case fileString.includes("RDF"):
-        parts = await parseSBOL(fileString, fileName, colors);
+        parts = await parseSBOL(fileString, fileName);
         break;
 
       // jbei
       case fileString.includes(':seq="http://jbei.org/sequence"'):
       case fileString.startsWith("<seq:seq"):
-        parts = await parseJBEI(fileString, colors);
+        parts = await parseJBEI(fileString);
         break;
 
       // a DNA text fileString without an official formatting
@@ -206,7 +201,7 @@ const fileToParts = async (
 };
 
 /**
- * Add source to the part and add a default annotation names.
+ * Add source to the part and add default annotation names.
  */
 const cleanupPart = (p, source: { file: string; name: string }): Part => ({
   ...p,

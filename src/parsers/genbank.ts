@@ -1,5 +1,5 @@
-import { complement, extractDate, partFactory } from "../../parser";
-import { annotationFactory } from "../../sequence";
+import { Annotation } from "../elements";
+import { complement, extractDate, partFactory } from "../parser";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameSet = new Set(["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host", "locus_tag"]);
@@ -16,7 +16,7 @@ const tagColorSet = new Set(["ApEinfo_fwdcolor", "ApEinfo_revcolor", "loom_color
  * another official example can be found at:
  * https://www.ncbi.nlm.nih.gov/Sitemap/samplerecord.html
  */
-export default async (fileInput, fileName, colors: string[] = []) =>
+export default async (fileInput: string, fileName: string) =>
   fileInput
     .split(/\/\/\s/g)
     .filter(f => f.length > 5)
@@ -88,7 +88,7 @@ export default async (fileInput, fileName, colors: string[] = []) =>
       // in the example above, source is the annotation "type" and name is "taxon:4932"
       // because "db_xref" is a recognized name type
       // the name depends on whether the tag type is in the reocgnized list of types
-      const annotations = [];
+      const annotations: Annotation[] = [];
       const primers = [];
       if (file.indexOf("FEATURES")) {
         const FEATURES_LINE = file.indexOf("FEATURES");
@@ -105,7 +105,7 @@ export default async (fileInput, fileName, colors: string[] = []) =>
           .split(/\n/)
           .filter(r => r);
 
-        FEATURES_ROWS.forEach((r, row_i) => {
+        FEATURES_ROWS.forEach(r => {
           // in the example above, the following converts it to ['source', '1..5028']
           const currLine = r.split(/\s{2,}/g).filter(l => l);
           if (currLine.length > 1) {
@@ -133,18 +133,10 @@ export default async (fileInput, fileName, colors: string[] = []) =>
             if (type !== "source") {
               // create a new annotation around the properties in this line (type and range)
               annotations.push({
-                ...annotationFactory(row_i, colors),
-
-                // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
                 direction,
-
-                // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
+                name: "", // set in next block
                 end,
-
-                // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
                 start,
-
-                // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
                 type,
               });
             }
@@ -162,15 +154,12 @@ export default async (fileInput, fileName, colors: string[] = []) =>
               const lastAnn = annotations.length - 1;
               if (tagNameSet.has(tagName.toLowerCase())) {
                 // the key is something we recognize as an annotation name
-                // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type 'never'.
                 if (lastAnn >= 0 && !annotations[lastAnn].name) {
-                  // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type 'never'.
                   annotations[lastAnn].name = tagValue.trim();
                 }
               } else if (tagColorSet.has(tagName)) {
                 // the key is something we recognize as an annotation color
                 if (lastAnn > -1) {
-                  // @ts-expect-error ts-migrate(2339) FIXME: Property 'color' does not exist on type 'never'.
                   annotations[lastAnn].color = tagValue;
                 }
               } else if (tagName === "loom_primer_sequence") {
@@ -193,7 +182,6 @@ export default async (fileInput, fileName, colors: string[] = []) =>
       // words like circular within the circular row
       // words like plasmid within the text/name
       let circular = false;
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'end' does not exist on type 'never'.
       if (annotations.find(a => !(a.end === 0 && a.start) && a.start > a.end) || HEADER_ROW.includes("circular")) {
         circular = true;
       }

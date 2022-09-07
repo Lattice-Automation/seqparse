@@ -6,8 +6,7 @@ import * as bufferpack from "bufferpack";
 import { StringDecoder } from "string_decoder";
 import * as xml2js from "xml2js";
 
-import { complement, partFactory } from "../../parser";
-import { annotationFactory } from "../../sequence";
+import { complement, partFactory } from "../parser";
 
 export default async (fileArrayBuffer, options) => {
   const { fileName = "" } = options;
@@ -127,7 +126,6 @@ export default async (fileArrayBuffer, options) => {
         const { directionality } = attrs;
         // @ts-expect-error ts-migrate(2339) FIXME: Property 'annotations' does not exist on type '{}'... Remove this comment to see the full error message
         data.annotations.push({
-          ...annotationFactory(),
           direction: directionalityDict[directionality],
           end: maxEnd - 1,
           name: attrs.name,

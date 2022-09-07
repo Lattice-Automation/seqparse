@@ -1,8 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { Part } from "../../elements";
-import { complement, firstElement, partFactory } from "../../parser";
-import { annotationFactory } from "../../sequence";
+import { Part } from "../elements";
+import { complement, firstElement, partFactory } from "../parser";
 
 /**
  * converts an XML part representation of a BioBrick part into a format
@@ -12,9 +11,8 @@ import { annotationFactory } from "../../sequence";
  *
  * an exmaple of the XML file that's parsed is in ./examples/biobrick
  */
-export default async (file, options): Promise<Part[]> =>
+export default async (file: string): Promise<Part[]> =>
   new Promise((resolve, reject) => {
-    const { backbone = "" } = options;
     // util reject function that will be triggered if any fields fail
     const rejectBioBrick = errType => reject(new Error(`Failed on BioBrick because ${errType}`));
 
@@ -46,12 +44,8 @@ export default async (file, options): Promise<Part[]> =>
         features = [];
       }
 
-      let seq = firstElement(seq_data.seq_data);
-      if (backbone.backbone) {
-        seq += backbone.backbone;
-      }
-      const backboneName = backbone.name && backbone.name.length < 20 ? backbone.name : "";
-      const name = `${firstElement(part_name)}-${backboneName}`;
+      const seq = firstElement(seq_data.seq_data);
+      const name = firstElement(part_name);
 
       if (!seq || !name) {
         // assume it failed
@@ -60,13 +54,12 @@ export default async (file, options): Promise<Part[]> =>
 
       // parse the iGEM annotations
       const annotations = features
-        .map((f, i) => {
+        .map(f => {
           if (!f) return null;
 
           const { direction, endpos, startpos, type } = f;
 
           return {
-            ...annotationFactory(i),
             direction: direction[0] === "forward" ? 1 : -1,
             end: +endpos[0] || 0,
             name: `${direction[0]}-${startpos[0]}`,
@@ -75,14 +68,6 @@ export default async (file, options): Promise<Part[]> =>
           };
         })
         .filter(a => a);
-
-      // add another annotation for the backbone
-      annotations.push({
-        ...annotationFactory(annotations.length),
-        end: 0,
-        name: backbone.name,
-        start: firstElement(seq_data.seq_data).length,
-      });
 
       const newPart = {
         ...partFactory(),

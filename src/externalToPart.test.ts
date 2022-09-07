@@ -29,12 +29,7 @@ describe("Import parts from external repositories", () => {
     it(`imports ${file}`, async () => {
       const { annotationCount, name, seqLength } = knownGenbanks[file];
 
-      let result;
-      if (file.startsWith("BBa_")) {
-        result = await externalToPart(file, { backbone: "pSB1C3" });
-      } else {
-        result = await externalToPart(file);
-      }
+      let result = await externalToPart(file);
 
       expect(result).toBeDefined();
       expect(result.seq).toHaveLength(seqLength);

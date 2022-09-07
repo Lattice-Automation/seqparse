@@ -1,5 +1,5 @@
-import { complement, extractDate, partFactory } from "../../parser";
-import { annotationFactory } from "../../sequence";
+import { Annotation } from "../elements";
+import { complement, extractDate, partFactory } from "../parser";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameList = ["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host"];
@@ -13,13 +13,15 @@ const tagColorList = ["ApEinfo_fwdcolor", "ApEinfo_revcolor", "loom_color"];
  * at imports/io/examples/seqbuilder, though there may be variations to the
  * format
  */
-export default async (fileInput, fileName, _: string[] = []) =>
+export default async (fileInput: string, fileName: string) =>
   fileInput.split(/\/\/\s/g).map(file => {
     // +++++SEQUENCE+++++//
     // the part sequence comes after the line that specifies the seqbuilder version number
+    // @ts-ignore
     const SEQ_ROWS = file
       .substring(
         file.search(/.*?written by seqbuilder .*?[0-9.]+[^actg]+/i) +
+          // @ts-ignore
           file.match(/.*?written by seqbuilder .*?[0-9.]+[^actg]+/i)[0].length,
         file.length
       )
@@ -96,7 +98,7 @@ export default async (fileInput, fileName, _: string[] = []) =>
     // in the example above, source is the annotation "type" and name is "taxon:4932"
     // because "db_xref" is a recognized name type
     // the name depends on whether the tag type is in the reocgnized list of types
-    const annotations = [];
+    const annotations: Annotation[] = [];
     if (file.indexOf("FEATURES")) {
       const FEATURES_LINE = file.indexOf("FEATURES");
       const FEATURES_NEW_LINE = file.indexOf("\n", FEATURES_LINE);
@@ -138,18 +140,10 @@ export default async (fileInput, fileName, _: string[] = []) =>
             // source would just be an annotation for the entire sequence so remove
             // create a new annotation around the properties in this line (type and range)
             annotations.push({
-              ...annotationFactory(),
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
               direction,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
+              name: "",
               end,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'number' is not assignable to type 'never'.
               start,
-
-              // @ts-expect-error ts-migrate(2322) FIXME: Type 'any' is not assignable to type 'never'.
               type,
             });
           }
@@ -166,17 +160,14 @@ export default async (fileInput, fileName, _: string[] = []) =>
           const lastAnnIndex = annotations.length - 1;
           if (tagNameList.includes(tagName)) {
             // it's key value pair where the key is something we recognize as an annotation name
-            // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type 'never'.
             if (lastAnnIndex > -1 && !annotations[annotations.length - 1].name) {
               // defensively check that there isn't already a defined annotation w/o a name
-              // @ts-expect-error ts-migrate(2339) FIXME: Property 'name' does not exist on type 'never'.
               annotations[annotations.length - 1].name = tagValue.trim();
             }
           } else if (tagColorList.includes(tagName)) {
             // it's key value pair where the key is something we recognize as an annotation color
             if (lastAnnIndex > -1) {
               // defensively check that there's already been a defined annotation
-              // @ts-expect-error ts-migrate(2339) FIXME: Property 'color' does not exist on type 'never'.
               annotations[annotations.length - 1].color = tagValue;
             }
           }
@@ -190,7 +181,6 @@ export default async (fileInput, fileName, _: string[] = []) =>
     // annotations that cross zero index
     // words like circular within the circular row
     // words like plasmid within the text/name
-    // @ts-expect-error ts-migrate(2339) FIXME: Property 'end' does not exist on type 'never'.
     if (annotations.find(a => !(a.end === 0 && a.start) && a.start > a.end)) {
       circular = true;
     }
