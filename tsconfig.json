@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "allowJs": false, // allow a partial TypeScript and JavaScript codebase
+    "allowUnreachableCode": false,
+    "declaration": true,
+    "lib": ["es2015"], // https://marcobotto.com/blog/compiling-and-bundling-typescript-libraries-with-webpack/
+    "module": "commonjs", // specify module code generation
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "./dist/", // path to output directory
+    "sourceMap": true, // allow sourcemap support
+    "strict": false, // TODO: set to true
+    "strictNullChecks": true, // enable strict null checks as a best practice
+    "strictPropertyInitialization": true,
+    "target": "es5", // specify ECMAScript target version
+    "types": [
+      "browser",
+      "node",
+      "jest"
+    ],
+  },
+  "include": ["./src/"]
+}
