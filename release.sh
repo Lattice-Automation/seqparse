@@ -26,5 +26,5 @@ git push
 
 # create a github release + tag
 version="$(jq -r '.version' < 'package.json')"
-release="$(gh release create "$version" --title "$version" --generate-notes --target develop)"
+release="$(gh release create "$version" --title "$version" --generate-notes --target main)"
 open "$release"
