@@ -1,7 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { Part } from "../elements";
-import { complement, firstElement, partFactory } from "../parser";
+import { Seq } from "..";
+import { complement, firstElement, guessType } from "../utils";
 
 /**
  * converts an XML part representation of a BioBrick part into a format
@@ -11,7 +11,7 @@ import { complement, firstElement, partFactory } from "../parser";
  *
  * an exmaple of the XML file that's parsed is in ./examples/biobrick
  */
-export default async (file: string): Promise<Part[]> =>
+export default async (file: string): Promise<Seq[]> =>
   new Promise((resolve, reject) => {
     // util reject function that will be triggered if any fields fail
     const rejectBioBrick = errType => reject(new Error(`Failed on BioBrick because ${errType}`));
@@ -69,14 +69,13 @@ export default async (file: string): Promise<Part[]> =>
         })
         .filter(a => a);
 
-      const newPart = {
-        ...partFactory(),
-        ...complement(seq),
-        annotations: annotations,
-        // seq and compSeq
-        name: name,
-      };
-
-      resolve([newPart]);
+      resolve([
+        {
+          ...complement(seq),
+          annotations: annotations,
+          name: name,
+          type: guessType(seq),
+        },
+      ]);
     });
   });

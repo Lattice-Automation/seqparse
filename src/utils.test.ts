@@ -1,6 +1,6 @@
-import { complement, directionality, reverseComplement } from "./parser";
+import { complement, directionality, guessType, reverseComplement } from "./utils";
 
-describe("Parse part input", () => {
+describe("Parse seq input", () => {
   it("parses DNA seq and compSeq", () => {
     const inSeq =
       "acacgattgcccgacggattcatgagatgtcaggccgcaaagggcgcctggtggcGATGAATTGCGCGGCCATTCCGGAGTCCCTCGccgagagcgagttattcggcgtggtcagcggtgcctacaccggcgctgatcgctccagagtcg";
@@ -34,5 +34,20 @@ describe("Parse part input", () => {
     expect(directionality("REV")).toEqual(-1);
     expect(directionality(-1)).toEqual(-1);
     expect(directionality("-1")).toEqual(-1);
+  });
+
+  it("detects type", () => {
+    const types = {
+      KNTRSPRFLE: "aa",
+      _fajsi: "unknown",
+      atgagcAGTA: "dna",
+      atugc: "unknown",
+      augagcAGUAa: "rna",
+      "kInm*": "aa",
+    };
+
+    Object.keys(types).forEach(k => {
+      expect(guessType(k)).toEqual(types[k]);
+    });
   });
 });

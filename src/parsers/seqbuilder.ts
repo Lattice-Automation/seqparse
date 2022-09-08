@@ -1,5 +1,5 @@
-import { Annotation } from "../elements";
-import { complement, extractDate, partFactory } from "../parser";
+import { Annotation } from "..";
+import { complement, extractDate, guessType } from "../utils";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameList = ["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host"];
@@ -141,8 +141,8 @@ export default async (fileInput: string, fileName: string) =>
             // create a new annotation around the properties in this line (type and range)
             annotations.push({
               direction,
-              name: "",
               end,
+              name: "",
               start,
               type,
             });
@@ -186,12 +186,12 @@ export default async (fileInput: string, fileName: string) =>
     }
 
     return {
-      ...partFactory(),
       annotations: annotations,
       circular: circular,
       compSeq: compSeq,
       date: date,
       name: parsedName.trim() || fileName,
       seq: seq,
+      type: guessType(seq),
     };
   });

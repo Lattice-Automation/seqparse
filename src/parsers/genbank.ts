@@ -1,5 +1,5 @@
-import { Annotation } from "../elements";
-import { complement, extractDate, partFactory } from "../parser";
+import { Annotation } from "..";
+import { complement, extractDate, guessType } from "../utils";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameSet = new Set(["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host", "locus_tag"]);
@@ -72,8 +72,7 @@ export default async (fileInput: string, fileName: string) =>
       //    61 ccgacatgag acagttaggt atcgtcgaga gttacaagct aaaacgagca gtagtcagct
       const SEQ_ROWS = file.substring(file.lastIndexOf("ORIGIN") + "ORIGIN".length, file.length);
       let seq = SEQ_ROWS.replace(/[^gatc]/gi, "");
-      let compSeq = "";
-      ({ compSeq, seq } = complement(seq)); // seq and compSeq
+      ({ seq } = complement(seq)); // seq and compSeq
 
       // +++++ANNOTATIONS+++++//
       // the features are translated into annotations
@@ -134,8 +133,9 @@ export default async (fileInput: string, fileName: string) =>
               // create a new annotation around the properties in this line (type and range)
               annotations.push({
                 direction,
-                name: "", // set in next block
+                // set in next block
                 end,
+                name: "",
                 start,
                 type,
               });
@@ -187,13 +187,12 @@ export default async (fileInput: string, fileName: string) =>
       }
 
       return {
-        ...partFactory(),
         annotations: annotations,
         circular: circular,
-        compSeq: compSeq,
         date: date,
         name: parsedName.trim() || fileName,
         primers: primers,
         seq: seq,
+        type: guessType(seq),
       };
     });

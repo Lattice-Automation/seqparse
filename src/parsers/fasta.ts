@@ -1,6 +1,8 @@
-export default async (text: string, fileName: string) => {
-  // partFactory returns a negative "circular" prop, we assume they're all linear
+import { Seq } from "..";
+import { guessType } from "../utils";
 
+export default async (text: string, fileName: string): Promise<Seq[]> => {
+  // partFactory returns a negative "circular" prop, we assume they're all linear
   if (text.trim().startsWith(">")) {
     return text
       .split(">") // split up if it's a multi-seq FASTA file
@@ -17,12 +19,15 @@ export default async (text: string, fileName: string) => {
         const name = t.substring(0, t.search(/\n|\|/)).replace(/\//g, "");
 
         return {
+          annotations: [],
           name,
           seq,
+          type: guessType(seq),
         };
       })
       .filter(p => p.name && p.seq);
   }
+
   if (text.trim().startsWith(";")) {
     // it's an old-school style FASTA that's punctuated with semi-colons
     // ;my|NAME
@@ -33,11 +38,14 @@ export default async (text: string, fileName: string) => {
     const seq = text.substring(newlineBeforeSeq, text.length);
     return [
       {
+        annotations: [],
         name,
         seq,
+        type: guessType(seq),
       },
     ];
   }
+
   // assume that it's a no name FASTA. Ie it's just a file with dna and no header
   // try and get the name from the fileName
   const lastChar = fileName.lastIndexOf(".") || fileName.length;
@@ -45,8 +53,10 @@ export default async (text: string, fileName: string) => {
   const seq = text;
   return [
     {
+      annotations: [],
       name,
       seq,
+      type: guessType(seq),
     },
   ];
 };

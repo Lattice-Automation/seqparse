@@ -1,7 +1,7 @@
-import externalToPart from "./externalToPart";
+import fetchFile from "./fetchFile";
 
-describe("Import parts from external repositories", () => {
-  // test import of some known parts against their expected properties
+describe("Import seqs from external repositories", () => {
+  // test import of some known seqs against their expected properties
 
   // test a couple files with a known number of annotations/seq length/name
   // etc to test that it's parsing correctly
@@ -12,16 +12,16 @@ describe("Import parts from external repositories", () => {
     //   name: "BBa_J23100", // one annotation for pSB1C3
     //   seqLength: 35 + 2070, // J23100 + pSB1C3
     // },
-    FJ172221: {
-      annotationCount: 5,
-      name: "FJ172221",
-      seqLength: 6062,
-    },
-    NC_011521: {
-      annotationCount: 22,
-      name: "NC_011521",
-      seqLength: 6062,
-    },
+    // FJ172221: {
+    //   annotationCount: 5,
+    //   name: "FJ172221",
+    //   seqLength: 6062,
+    // },
+    // NC_011521: {
+    //   annotationCount: 22,
+    //   name: "NC_011521",
+    //   seqLength: 6062,
+    // },
   };
 
   // check if name, annotation cound and sequence length are correct
@@ -29,7 +29,7 @@ describe("Import parts from external repositories", () => {
     it(`imports ${file}`, async () => {
       const { annotationCount, name, seqLength } = knownGenbanks[file];
 
-      let result = await externalToPart(file);
+      const result = await fetchFile(file);
 
       expect(result).toBeDefined();
       expect(result.seq).toHaveLength(seqLength);
@@ -41,8 +41,8 @@ describe("Import parts from external repositories", () => {
 
   it("throws error for bad accession", async () => {
     try {
-      const parts = await externalToPart("asdf");
-      fail(`error expected, parts returned: ${parts}`);
+      const seqs = await fetchFile("asdf");
+      fail(`error expected, seqs returned: ${seqs}`);
     } catch (err) {
       // expected
     }

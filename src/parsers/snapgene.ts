@@ -6,9 +6,10 @@ import * as bufferpack from "bufferpack";
 import { StringDecoder } from "string_decoder";
 import * as xml2js from "xml2js";
 
-import { complement, partFactory } from "../parser";
+import { Seq } from "..";
+import { complement, guessType } from "../utils";
 
-export default async (fileArrayBuffer, options) => {
+export default async (fileArrayBuffer, options): Promise<Seq[]> => {
   const { fileName = "" } = options;
   let offset = 0;
   const read = (size, fmt) => {
@@ -38,7 +39,12 @@ export default async (fileArrayBuffer, options) => {
   if (length !== 14 || title !== "SnapGene") {
     throw new Error("wrong format for a SnapGene file");
   }
-  const data = {};
+  const data: Seq = {
+    annotations: [],
+    name: "",
+    seq: "",
+    type: "unknown",
+  };
   // @ts-expect-error ts-migrate(2339) FIXME: Property 'isDNA' does not exist on type '{}'.
   data.isDNA = await unpack(2, "H");
   // @ts-expect-error ts-migrate(2339) FIXME: Property 'exportVersion' does not exist on type '{... Remove this comment to see the full error message
@@ -108,7 +114,6 @@ export default async (fileArrayBuffer, options) => {
       const b = await editMD(xml);
       // @ts-expect-error ts-migrate(2339) FIXME: Property 'Features' does not exist on type 'unknow... Remove this comment to see the full error message
       const { Features: { Feature = [] } = {} } = b;
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'annotations' does not exist on type '{}'... Remove this comment to see the full error message
       data.annotations = [];
       Feature.forEach(({ $: attrs, Segment = [] }) => {
         let minStart = 0;
@@ -124,7 +129,6 @@ export default async (fileArrayBuffer, options) => {
           });
         }
         const { directionality } = attrs;
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'annotations' does not exist on type '{}'... Remove this comment to see the full error message
         data.annotations.push({
           direction: directionalityDict[directionality],
           end: maxEnd - 1,
@@ -142,9 +146,9 @@ export default async (fileArrayBuffer, options) => {
 
   return [
     {
-      ...partFactory(),
       ...data,
       name: fileName.replace(".dna", ""),
+      type: guessType(data.seq),
     },
   ];
 };

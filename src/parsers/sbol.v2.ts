@@ -1,7 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { Annotation, Part } from "../elements";
-import { complement } from "../parser";
+import { Annotation, Seq } from "..";
+import { complement, guessType } from "../utils";
 
 /**
  * SBOL v2.0 schema definition can be found at: http://sbolstandard.org/wp-content/uploads/2016/06/SBOL-data-model-2.2.1.pdf
@@ -21,11 +21,9 @@ const first = elArr => {
 };
 
 /**
- * takes an SBOL file, as a string, and converts it into our DB
- * representation of a part(s). an example of this type of file can be
- * found in ../examples/j5.SBOL.xml
+ * Converts an SBOL file to our Seq format.
  */
-export default async (sbol: string, fileName: string): Promise<Part[]> =>
+export default async (sbol: string, fileName: string): Promise<Seq[]> =>
   new Promise((resolve, reject) => {
     // util reject function that will be triggered if any fields fail
     const rejectSBOL = errType => reject(new Error(`Failed on SBOLv2 file: ${errType}`));
@@ -62,7 +60,7 @@ export default async (sbol: string, fileName: string): Promise<Part[]> =>
         }
 
         // it's a collection of DnaComponents, parse each to a part
-        const partList: Part[] = [];
+        const seqList: Seq[] = [];
         ComponentDefinition.forEach((c, i) => {
           // we're only making parts out of those with seq info
           if (!c.sequence || !c.sequence.length) {
@@ -89,7 +87,7 @@ export default async (sbol: string, fileName: string): Promise<Part[]> =>
           const seqID = sequence[0].xml_tag["rdf:resource"].value;
 
           // try and find sequence data
-          const partSeq = Sequence.find(
+          const seqElement = Sequence.find(
             s =>
               (s.persistentIdentity &&
                 s.persistentIdentity.length &&
@@ -97,22 +95,21 @@ export default async (sbol: string, fileName: string): Promise<Part[]> =>
               s.xml_tag["rdf:about"].value === seqID
           );
 
-          if (partSeq && partSeq.elements) {
-            const seqInput = first(partSeq.elements) || "";
-            const { compSeq, seq } = complement(seqInput);
-            partList.push({
+          if (seqElement && seqElement.elements) {
+            const seqInput = first(seqElement.elements) || "";
+            const { seq } = complement(seqInput);
+            seqList.push({
               annotations,
-              compSeq,
               name,
-              primers: [],
               seq,
+              type: guessType(seq),
             });
           }
         });
 
         // check whether any parts were created from the collection
-        if (partList.length) {
-          resolve(partList);
+        if (seqList.length) {
+          resolve(seqList);
         }
 
         // nothing in root

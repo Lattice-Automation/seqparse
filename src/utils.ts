@@ -1,5 +1,3 @@
-import { Part } from "./elements";
-
 // from http://arep.med.harvard.edu/labgc/adnan/projects/Utilities/revcomp.html
 const comp = {
   A: "T",
@@ -107,10 +105,90 @@ export const directionality = (direction: number | string | undefined): -1 | 0 |
   return 0;
 };
 
-export const partFactory = (): Part => ({
-  annotations: [],
-  compSeq: "",
-  name: "",
-  primers: [],
-  seq: "",
-});
+/**
+ * mapping the 64 standard codons to amino acids
+ * no synth AA's
+ *
+ * adapted from: "https://github.com/keithwhor/NtSeq/blob/master/lib/nt.js
+ */
+const codon2AA = {
+  AAA: "K",
+  AAC: "N",
+  AAG: "K",
+  AAT: "N",
+  ACA: "T",
+  ACC: "T",
+  ACG: "T",
+  ACT: "T",
+  AGA: "R",
+  AGC: "S",
+  AGG: "R",
+  AGT: "S",
+  ATA: "I",
+  ATC: "I",
+  ATG: "M",
+  ATT: "I",
+  CAA: "Q",
+  CAC: "H",
+  CAG: "Q",
+  CAT: "H",
+  CCA: "P",
+  CCC: "P",
+  CCG: "P",
+  CCT: "P",
+  CGA: "R",
+  CGC: "R",
+  CGG: "R",
+  CGT: "R",
+  CTA: "L",
+  CTC: "L",
+  CTG: "L",
+  CTT: "L",
+  GAA: "E",
+  GAC: "D",
+  GAG: "E",
+  GAT: "D",
+  GCA: "A",
+  GCC: "A",
+  GCG: "A",
+  GCT: "A",
+  GGA: "G",
+  GGC: "G",
+  GGG: "G",
+  GGT: "G",
+  GTA: "V",
+  GTC: "V",
+  GTG: "V",
+  GTT: "V",
+  TAA: "*",
+  TAC: "Y",
+  TAG: "*",
+  TAT: "Y",
+  TCA: "S",
+  TCC: "S",
+  TCG: "S",
+  TCT: "S",
+  TGA: "*",
+  TGC: "C",
+  TGG: "W",
+  TGT: "C",
+  TTA: "L",
+  TTC: "F",
+  TTG: "L",
+  TTT: "F",
+};
+
+const aminoAcids = Array.from(new Set(Object.values(codon2AA)).values()).join("");
+const aminoAcidRegex = new RegExp(`^[${aminoAcids}]+$`, "i");
+
+/** Infer the type of a sequence. This is *without* any ambiguous symbols, so maybe wrong by being overly strict. */
+export const guessType = (seq: string): "dna" | "rna" | "aa" | "unknown" => {
+  if (/^[atgc]+$/i.test(seq)) {
+    return "dna";
+  } else if (/^[augc]+$/i.test(seq)) {
+    return "rna";
+  } else if (aminoAcidRegex.test(seq)) {
+    return "aa";
+  }
+  return "unknown";
+};

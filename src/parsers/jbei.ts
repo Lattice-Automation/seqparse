@@ -1,13 +1,13 @@
 import * as xml2js from "xml2js";
 
-import { Annotation, Part } from "../elements";
-import { complement, partFactory } from "../parser";
+import { Annotation, Seq } from "..";
+import { complement, guessType } from "../utils";
 
 /**
  * takes a JBEI file, as a string, and converts it to a Part.
  * An example of this type of file can be found in ../examples/jbei
  */
-export default async (JBEI: string, _: string[] = []): Promise<Part[]> =>
+export default async (JBEI: string): Promise<Seq[]> =>
   new Promise((resolve, reject) => {
     // util reject function that will be triggered if any fields fail
     const rejectJBEI = errType => reject(new Error(`Failed on JBEI file; ${errType}`));
@@ -40,7 +40,7 @@ export default async (JBEI: string, _: string[] = []): Promise<Part[]> =>
         if (sequence && sequence[0] && sequence[0]._) {
           parsedSeq = sequence[0]._;
         }
-        const { compSeq: parsedCompSeq, seq: parsedSeq2 } = complement(parsedSeq); // seq and compSeq
+        const { seq: parsedSeq2 } = complement(parsedSeq); // seq and compSeq
         if (!parsedSeq2) return null;
 
         // attempt to parse the JBEI annotations into our version of annotations
@@ -65,11 +65,10 @@ export default async (JBEI: string, _: string[] = []): Promise<Part[]> =>
 
         resolve([
           {
-            ...partFactory(),
             annotations: annotations,
-            compSeq: parsedCompSeq,
             name: parsedName,
             seq: parsedSeq2,
+            type: guessType(parsedSeq2),
           },
         ]);
       }

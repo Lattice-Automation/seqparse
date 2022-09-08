@@ -1,19 +1,21 @@
-import { Part } from "./elements";
-import fileToParts from "./filesToParts";
+import fetch from "node-fetch";
+
+import { Seq } from ".";
+import parseFile from "./parseFile";
 
 /**
- * Get a remote sequence/part from NCBI or the iGEM registry.
+ * Get a remote sequence from NCBI or the iGEM registry.
  */
-export default async (accession: string): Promise<Part> => {
+export default async (accession: string): Promise<Seq> => {
   // The user doesn't specify the target registry, so we have to infer it from the passed accession: iGEM or NCBI
   let url = `https://eutils.ncbi.nlm.nih.gov/entrez/eefetch.fcgi?db=nuccore&id=${accession.trim()}&rettype=gbwithparts&retmode=text`;
   if (accession.startsWith("BB")) {
     // it's a BioBrick... target the iGEM repo
     if (typeof window === "undefined") {
       // use this hack to get around a no-CORS setting on iGEM webserver, pending fix on their side
-      url = `https://cors-anywhere.herokuapp.com/http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
+      url = `https://cors-anywhere.herokuapp.com/http://seqs.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
     } else {
-      url = `http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
+      url = `http://seqs.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
     }
   }
 
@@ -21,6 +23,7 @@ export default async (accession: string): Promise<Part> => {
   let body = "";
   let response: Response;
   try {
+    // @ts-ignore
     response = await fetch(url);
     body = await response.text();
   } catch (err) {
@@ -30,7 +33,16 @@ export default async (accession: string): Promise<Part> => {
     throw new Error(`Failed to get part, no body returned: accession=${accession} url=${url}`);
   }
 
-  // Convert to a part
-  const parts = await fileToParts(body);
-  return parts[0];
+  return await parseFile(body)[0];
+};
+
+/** returns whether the passed ID is an accession in iGEM or NCBI */
+export const isAccession = (accession: string): boolean => {
+  if (accession.startsWith("BB")) {
+    return true; // biobrick
+  }
+  if (accession.length < 14 && accession.match(/^[a-z0-9]+$/i)) {
+    return true;
+  }
+  return false;
 };

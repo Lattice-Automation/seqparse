@@ -1,7 +1,7 @@
 import * as xml2js from "xml2js";
 
-import { Annotation, Part } from "../elements";
-import { complement, partFactory } from "../parser";
+import { Annotation, Seq } from "..";
+import { complement, guessType } from "../utils";
 
 /*
   <sbol:Sequence rdf:about="https://synbiohub.cidarlab.org/public/Demo/A1_sequence/1">
@@ -91,12 +91,12 @@ const dnaComponentToPart = (DnaComponent, options) => {
   const circular = file.search(/plasmid/i) > 0;
 
   return {
-    ...partFactory(),
     annotations: annotations,
     circular: circular,
     compSeq: parsedCompSeq,
     name: parsedName,
     seq: parsedSeq,
+    type: guessType(seq),
   };
 };
 
@@ -119,7 +119,7 @@ const sequenceToPart = (Seq, file) => {
   // very ad hoc
   const circular = file.search(/plasmid/i) > 0;
 
-  return { ...partFactory(), circular, compSeq, name, seq };
+  return { annotations: [], circular, compSeq, name, seq, type: guessType(seq) };
 };
 
 /**
@@ -128,7 +128,7 @@ const sequenceToPart = (Seq, file) => {
  * this is a last-resort scrapper that tries to find valid parts that aren't within a root
  * DnaComponent document or within a root Collection array
  */
-const findDnaComponentNodes = (acc: Part[], doc: any) => {
+const findDnaComponentNodes = (acc: Seq[], doc: any) => {
   Object.keys(doc).forEach(k => {
     if (k === "DnaComponent" && doc[k].length) acc.push(...doc[k]);
     if (Array.isArray(doc[k])) {
@@ -160,7 +160,7 @@ const findSequenceNodes = (acc, doc) => {
  * representation of a part(s). an example of this type of file can be
  * found in ../examples/j5.SBOL.xml
  */
-export default async (sbol: string): Promise<Part[]> =>
+export default async (sbol: string): Promise<Seq[]> =>
   new Promise((resolve, reject) => {
     // it shouldn't take longer than this to parse the SBOL file
     setTimeout(() => {
@@ -222,18 +222,19 @@ export default async (sbol: string): Promise<Part[]> =>
         // accumulate all that are "valid" (name + seq)
         const dnaComponentAccumulator = [];
         findDnaComponentNodes(dnaComponentAccumulator, RDF);
-        const attemptedParts = dnaComponentAccumulator
+
+        // @ts-ignore
+        const attemptedSeqs: Seq[] = dnaComponentAccumulator
           .map(p =>
             dnaComponentToPart(p, {
               file: sbol,
               strict: true,
             })
           )
-          .filter(p => p); // invalid parts will be null
-        // @ts-expect-error FIXME
-        if (attemptedParts.length) resolve(attemptedParts);
+          .filter(p => !!p); // invalid parts will be null
+        if (attemptedSeqs.length) resolve(attemptedSeqs);
 
-        // go on another fishing expidition, but for Sequence nodes
+        // go on another fishing expedition, but for Sequence nodes
         const dnaSequenceAccumulator = [];
         findSequenceNodes(dnaSequenceAccumulator, RDF);
         const sequenceNodes = dnaSequenceAccumulator.map(p => sequenceToPart(p, sbol)).filter(p => p); // invalid parts will be null

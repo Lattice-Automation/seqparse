@@ -1,17 +1,8 @@
 import * as fs from "fs";
 
-import filesToParts from "./filesToParts";
+import parseFile from "./parseFile";
 
-/**
- * test filesToParts (and therefore the ./parsers/**) against all the example
- * files in ./io/examples
- *
- * these tests are binary: can the importer/parser make parts from
- * all the files or not. more detailed tests of the accuracy of results should
- * be elsewhere (directly adjacent the parser). This is just testing whether
- * filesToParts completely bails on files
- */
-describe("Converts files to parts (IO)", () => {
+describe("Converts files to seqs (IO)", () => {
   const types = ["genbank", "fasta", "jbei", "benchling", "snapgene"];
   const folders = types.map(t => `${__dirname}/examples/${t}`);
 
@@ -32,12 +23,11 @@ describe("Converts files to parts (IO)", () => {
 
         // does it include a name, seq, and source?
         try {
-          const result = await filesToParts(fileString, allFiles[file]);
+          const result = await parseFile(fileString, allFiles[file]);
           expect(typeof result).toEqual(typeof []);
           expect(typeof result[0]).toEqual(typeof {});
           expect(result[0].name).toMatch(/.{2,}/);
           expect(result[0].seq).toMatch(/[atgcATGC]{10,}/);
-          expect(result[0].compSeq).toMatch(/[atgcATGC]{10,}/);
         } catch (err) {
           console.error(err);
           throw err;
@@ -52,13 +42,13 @@ describe("Converts files to parts (IO)", () => {
       .slice(0, 3);
 
     try {
-      const result = await filesToParts(files.map(f => fs.readFileSync(allFiles[f], "utf8")));
+      const result = await parseFile(files.map(f => fs.readFileSync(allFiles[f], "utf8")));
 
       expect(typeof result).toEqual(typeof []);
-      result.forEach(part => {
-        expect(typeof part).toEqual(typeof {});
-        expect(part.name).toMatch(/.{2,}/);
-        expect(part.seq).toMatch(/.{2,}/);
+      result.forEach(seqs => {
+        expect(typeof seqs).toEqual(typeof {});
+        expect(seqs.name).toMatch(/.{2,}/);
+        expect(seqs.seq).toMatch(/.{2,}/);
       });
     } catch (err) {
       console.error(err);
@@ -68,7 +58,7 @@ describe("Converts files to parts (IO)", () => {
 
   // https://github.com/Lattice-Automation/seqviz/issues/117
   it("handles single bp annotations", async () => {
-    const result = await filesToParts(fs.readFileSync(allFiles["genbank/testGenbankFile.2.gb"], "utf8"));
+    const result = await parseFile(fs.readFileSync(allFiles["genbank/testGenbankFile.2.gb"], "utf8"));
 
     expect(result.length).toEqual(1);
     const annotation = result[0].annotations[1];
@@ -78,7 +68,7 @@ describe("Converts files to parts (IO)", () => {
 
   // https://github.com/Lattice-Automation/seqviz/issues/166
   it("parses benchling annotation direction", async () => {
-    const result = await filesToParts(fs.readFileSync(allFiles["benchling/benchling1.json"], "utf8"));
+    const result = await parseFile(fs.readFileSync(allFiles["benchling/benchling1.json"], "utf8"));
 
     expect(result.length).toEqual(1);
     [
