@@ -21,14 +21,7 @@ import { complement, guessType } from "../utils";
 /**
  * after getting a DnaComponent out of the SBOL document,
  * at either the root RDF level or from within a Collection/Annotation
- * heirarchy, convert that DnaComponent to a part
- *
- 
- * 							 find something that looks remotely like a valid part
- * 							 (ie, after we can't make a valid part from root DnaComponent
- * 							 or root Collection), we will only accept parts that have both
- * 							 name and sequence information. Otherwise we might get too
- * 							 desperate and wind up with some oddly malformed parts
+ * heirarchy, convert that DnaComponent to a Seq
  */
 const dnaComponentToPart = (DnaComponent, options) => {
   const { file, strict = false } = options;

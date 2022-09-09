@@ -1,6 +1,6 @@
 # seqparse
 
-Parse sequence files (GenBank, FASTA, SnapGene, SBOL) or accession IDs (NCBI, iGEM) to a simple, common format:
+Parse sequence files (GenBank, FASTA, JBEI, SnapGene, SBOL) or accession IDs (NCBI, iGEM) to a simple, common format:
 
 ```ts
 interface Seq {
@@ -9,17 +9,26 @@ interface Seq {
   seq: string;
   annotations: Annotation[];
 }
+
+interface Annotation {
+  name: string;
+  start: number;
+  end: number;
+  color?: string;
+  direction?: number;
+  type?: string;
+}
 ```
 
 ## Installation
 
-```
+```bash
 npm i seqparse
 ```
 
 To install the CLI globally:
 
-```
+```bash
 npm i -g seqparse
 ```
 

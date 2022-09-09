@@ -36,13 +36,6 @@ export default async (fileInput: string, fileName: string) =>
     let date = Date.now();
     let circular = false;
 
-    if (seq.length > 500000) {
-      throw new Error(
-        `Import of sequence length ${seq.length}bp failed. Please keep sequences under 500000bp.`,
-        // @ts-expect-error ts-migrate(2554) FIXME: Expected 0-1 arguments, but got 2.
-        seq.length
-      );
-    }
     if (~file.indexOf("LOCUS")) {
       const HEADER_ROW = file.substring(file.indexOf("LOCUS"), file.search(/\\n|\n/));
       if (HEADER_ROW && HEADER_ROW.split(/\s{2,}/g)) {

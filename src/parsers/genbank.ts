@@ -25,11 +25,10 @@ export default async (fileInput: string, fileName: string) =>
       // LOCUS       SCU49845     5028 bp    DNA             PLN       21-JUN-1999
       const HEADER_ROW = file.substring(file.indexOf("LOCUS"), file.search(/\\n|\n/));
       const [, name, ...headerRest] = HEADER_ROW.split(/\s{2,}/g).filter(h => h);
+
       // trying to avoid giving a stupid name like Exported which Snapgene has by default
       // also, if there is not name in header, the seq length will be used as name, which should
       // be corrected (Number.parseInt to check for this case) https://stackoverflow.com/a/175787/7541747
-
-      // +++++META DATA+++++//
       let parsedName = name;
       if (
         (parsedName === "Exported" && file.includes("SnapGene")) || // stupid Snapgene name
@@ -63,7 +62,6 @@ export default async (fileInput: string, fileName: string) =>
 
       const date = extractDate(headerRest);
 
-      // +++++SEQUENCE+++++//
       // the part sequence is contained in and after the line that begins with ORIGIN
       // do this before annotations so we can calc seqlength
       //
@@ -74,7 +72,6 @@ export default async (fileInput: string, fileName: string) =>
       let seq = SEQ_ROWS.replace(/[^gatc]/gi, "");
       ({ seq } = complement(seq)); // seq and compSeq
 
-      // +++++ANNOTATIONS+++++//
       // the features are translated into annotations
       // region is FEATURES thru ORIGIN
       // FEATURES             Location/Qualifiers
@@ -162,33 +159,14 @@ export default async (fileInput: string, fileName: string) =>
                 if (lastAnn > -1) {
                   annotations[lastAnn].color = tagValue;
                 }
-              } else if (tagName === "loom_primer_sequence") {
-                // Loom specific tag used to preserve mismatches
-                // @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'primerFlag'.
-                if (primerFlag) {
-                  // @ts-expect-error ts-migrate(2339) FIXME: Property 'sequence' does not exist on type 'never'... Remove this comment to see the full error message
-                  primers[primers.length - 1].sequence = tagValue;
-                }
               }
             }
           }
         });
       }
 
-      // try to figure out whether the part is linear or circular
-      // hints for a part being circular include:
-      // circular in the header row
-      // annotations that cross zero index
-      // words like circular within the circular row
-      // words like plasmid within the text/name
-      let circular = false;
-      if (annotations.find(a => !(a.end === 0 && a.start) && a.start > a.end) || HEADER_ROW.includes("circular")) {
-        circular = true;
-      }
-
       return {
         annotations: annotations,
-        circular: circular,
         date: date,
         name: parsedName.trim() || fileName,
         primers: primers,

@@ -4,14 +4,12 @@ import { Annotation, Seq } from "..";
 import { complement, guessType } from "../utils";
 
 /**
- * takes a JBEI file, as a string, and converts it to a Part.
- * An example of this type of file can be found in ../examples/jbei
+ * Converts a JBEI file to a Seq
+ *
+ * https://j5.jbei.org/j5manual/pages/94.html
  */
 export default async (JBEI: string): Promise<Seq[]> =>
   new Promise((resolve, reject) => {
-    // util reject function that will be triggered if any fields fail
-    const rejectJBEI = errType => reject(new Error(`Failed on JBEI file; ${errType}`));
-
     // weird edge case with directed quotation characters
     const fileString = JBEI.replace(/“|”/g, '"');
 
@@ -23,7 +21,9 @@ export default async (JBEI: string): Promise<Seq[]> =>
         xmlns: true,
       },
       (err, parsedJBEI) => {
-        if (err) rejectJBEI(err);
+        if (err) {
+          reject(new Error(`Failed to parse JBEI file: ${err}`));
+        }
 
         // destructure the paramaeters from JBEI
         const { seq } = parsedJBEI;

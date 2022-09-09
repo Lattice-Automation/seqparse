@@ -174,11 +174,20 @@ const parseFile = async (file: string | ArrayBuffer, options: FileOptions = { fi
       throw Error(`${fileName} File type not recognized: ${fileString}`);
   }
 
-  // return only the fields described in the Seq type.
+  // bit of clean up to: only return the fields in a Seq and reorder to match expectations.
   return seqs.map(p => ({
     name: p.name,
     type: p.type,
     seq: p.seq,
-    annotations: p.annotations,
+    annotations: p.annotations
+      .sort((a, b) => a.start - b.start || a.end - b.end)
+      .map(a => ({
+        name: a.name,
+        start: a.start,
+        end: a.end,
+        direction: a.direction,
+        type: a.type,
+        color: a.color,
+      })),
   }));
 };

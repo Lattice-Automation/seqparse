@@ -1,6 +1,6 @@
 import fetchFile from "./fetchFile";
 
-describe("Import seqs from external repositories", () => {
+describe("Fetches files", () => {
   // test import of some known seqs against their expected properties
 
   // test a couple files with a known number of annotations/seq length/name

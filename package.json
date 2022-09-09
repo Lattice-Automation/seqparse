@@ -13,7 +13,8 @@
     "major": "./release.sh major",
     "minor": "./release.sh minor",
     "patch": "./release.sh patch",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "files": [
     "dist",
@@ -27,11 +28,13 @@
   "keywords": [
     "accession",
     "cli",
+    "dna",
     "fasta",
     "genbank",
     "igem",
     "ncbi",
-    "parsing"
+    "parsing",
+    "rna"
   ],
   "author": "",
   "license": "MIT",
