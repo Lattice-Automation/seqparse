@@ -11,11 +11,11 @@ export default async (accession: string): Promise<Seq> => {
   let url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=${accession.trim()}&rettype=gbwithparts&retmode=text`;
   if (accession.startsWith("BB")) {
     // it's a BioBrick... target the iGEM repo
-    if (process) {
-      url = `http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
-    } else {
+    if (typeof window !== "undefined" && typeof process === "undefined") {
       // use this hack to get around a no-CORS setting on iGEM webserver, pending fix on their side
       url = `https://cors-anywhere.herokuapp.com/http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
+    } else {
+      url = `http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
     }
   }
 
