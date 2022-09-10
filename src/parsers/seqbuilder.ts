@@ -1,5 +1,5 @@
 import { Annotation } from "..";
-import { complement, extractDate, guessType } from "../utils";
+import { complement, guessType } from "../utils";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameList = ["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host"];
@@ -28,23 +28,16 @@ export default async (fileInput: string, fileName: string) =>
       .match(/[actgyrwskmdvhbxn]+/gim)[0];
 
     let seq = SEQ_ROWS;
-    let compSeq = "";
-    ({ compSeq, seq } = complement(seq)); // seq and compSeq
+    ({ seq } = complement(seq)); // seq and compSeq
     // there may be a genbank-like header row after the sequence
     // LOCUS       SCU49845     5028 bp    DNA             PLN       21-JUN-1999
     let parsedName = fileName.length > 0 ? fileName : "Unnamed";
-    let date = Date.now();
-    let circular = false;
 
     if (~file.indexOf("LOCUS")) {
       const HEADER_ROW = file.substring(file.indexOf("LOCUS"), file.search(/\\n|\n/));
       if (HEADER_ROW && HEADER_ROW.split(/\s{2,}/g)) {
-        const [, name, ...headerRest] = HEADER_ROW.split(/\s{2,}/g).filter(h => h);
+        const [, name] = HEADER_ROW.split(/\s{2,}/g).filter(h => h);
         parsedName = name;
-        date = extractDate(headerRest);
-        if (HEADER_ROW.includes("circular")) {
-          circular = true;
-        }
       }
     }
     // Name setting logic ported from GenBank parser
@@ -168,21 +161,8 @@ export default async (fileInput: string, fileName: string) =>
       });
     }
 
-    // try to figure out whether the part is linear or circular
-    // hints for a part being circular include:
-    // circular in the header row
-    // annotations that cross zero index
-    // words like circular within the circular row
-    // words like plasmid within the text/name
-    if (annotations.find(a => !(a.end === 0 && a.start) && a.start > a.end)) {
-      circular = true;
-    }
-
     return {
       annotations: annotations,
-      circular: circular,
-      compSeq: compSeq,
-      date: date,
       name: parsedName.trim() || fileName,
       seq: seq,
       type: guessType(seq),

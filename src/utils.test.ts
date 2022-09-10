@@ -1,4 +1,4 @@
-import { complement, directionality, guessType, reverseComplement } from "./utils";
+import { complement, guessType, parseDirection, reverseComplement } from "./utils";
 
 describe("Parse seq input", () => {
   it("parses DNA seq and compSeq", () => {
@@ -24,16 +24,16 @@ describe("Parse seq input", () => {
   });
 
   it("parses directionality from multiple formats", () => {
-    expect(directionality("FWD")).toEqual(1);
-    expect(directionality("FORWARD")).toEqual(1);
-    expect(directionality(1)).toEqual(1);
-    expect(directionality("1")).toEqual(1);
-    expect(directionality("test")).toEqual(0);
-    expect(directionality("NONE")).toEqual(0);
-    expect(directionality("REVERSE")).toEqual(-1);
-    expect(directionality("REV")).toEqual(-1);
-    expect(directionality(-1)).toEqual(-1);
-    expect(directionality("-1")).toEqual(-1);
+    expect(parseDirection("FWD")).toEqual(1);
+    expect(parseDirection("FORWARD")).toEqual(1);
+    expect(parseDirection(1)).toEqual(1);
+    expect(parseDirection("1")).toEqual(1);
+    expect(parseDirection("test")).toEqual(0);
+    expect(parseDirection("NONE")).toEqual(0);
+    expect(parseDirection("REVERSE")).toEqual(-1);
+    expect(parseDirection("REV")).toEqual(-1);
+    expect(parseDirection(-1)).toEqual(-1);
+    expect(parseDirection("-1")).toEqual(-1);
   });
 
   it("detects type", () => {
@@ -44,6 +44,8 @@ describe("Parse seq input", () => {
       atugc: "unknown",
       augagcAGUAa: "rna",
       "kInm*": "aa",
+      tgatcaaacctaaagagtgggacagagagtactactatattcgtttcactcgccnaaaagttttgaac: "dna",
+      ttgacggctagctcagtcctaggtacagtgctagc: "dna",
     };
 
     Object.keys(types).forEach(k => {

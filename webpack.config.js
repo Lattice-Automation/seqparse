@@ -36,7 +36,6 @@ const webBuild = {
       net: false,
       tls: false,
       path: require.resolve("path-browserify"),
-      string_decoder: require.resolve("string_decoder"),
       stream: require.resolve("stream-browserify"),
       timers: require.resolve("timers-browserify"),
       url: require.resolve("url"),
@@ -69,12 +68,6 @@ const cliBuild = {
   resolve: {
     extensions: [".ts"],
     fallback: {
-      buffer: require.resolve("buffer"),
-      // fs: false,
-      // net: false,
-      // tls: false,
-      path: require.resolve("path-browserify"),
-      string_decoder: require.resolve("string_decoder"),
       stream: require.resolve("stream-browserify"),
       timers: require.resolve("timers-browserify"),
       url: require.resolve("url"),

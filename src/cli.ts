@@ -4,8 +4,9 @@ import pino from "pino";
 import pretty from "pino-pretty";
 
 import seqparse from ".";
+import { ParseOptions } from "./parseFile";
 
-/** use LOG_LEVEL=debug to get a bit of debug logging */
+/** use LOG_LEVEL=debug for some debugging help */
 const stream = pretty({
   colorize: true,
 });
@@ -20,18 +21,20 @@ let logger = pino(
 const exit = () => {
   console.error(`# Example USAGE:
 
-# parsing a file
+# parse a file
 seqparse gene.fa
 
-# parsing a file from stdin
+# parse a file from stdin
 cat gene.fa | seqparse
 
-# downloading and parsing a file from NCBI
+# fetch and parse a file from NCBI of iGEM by accession
 seqparse FJ172221`);
   process.exit(1);
 };
 
 /** input can be a file name as first arg or stdin */
+const parseOptions = {} as ParseOptions;
+
 let input: string | null = null;
 if (process.argv[2]) {
   input = process.argv[2];
@@ -41,7 +44,9 @@ if (process.argv[2]) {
   logger = logger.child({ stdin: true });
   try {
     logger.debug(null, "attempting to read stdin");
-    input = readFileSync(process.stdin.fd, "utf-8").toString();
+    parseOptions.source = readFileSync(process.stdin.fd);
+    parseOptions.fileName = "Unknown";
+    input = (parseOptions.source as Buffer).toString("utf-8");
     logger.debug(null, "successfully read stdin");
   } catch (err) {
     // only a debug here because am assuming the user just didn't pass anything
@@ -64,9 +69,11 @@ logger = logger.child({ isFile });
 let fileContents: string | null = null;
 if (isFile) {
   logger = logger.child({ fileName: input });
+  parseOptions.fileName = input;
   try {
     logger.debug(null, "attempting to read file");
-    fileContents = readFileSync(input).toString();
+    parseOptions.source = readFileSync(input);
+    fileContents = (parseOptions.source as Buffer).toString("utf-8");
     logger = logger.child({ length: fileContents.length, prefix: fileContents.substring(0, 50) });
     logger.debug(null, "successfully read file");
   } catch (err) {
@@ -77,7 +84,7 @@ if (isFile) {
 
 /** parse, write to stdout */
 logger.debug(null, "attempting to parse input");
-seqparse(fileContents || input, isFile ? { fileName: input } : {})
+seqparse(fileContents || input, parseOptions)
   .then(r => {
     logger.debug(null, "successfully parsed file");
     console.log(JSON.stringify(r, null, 2));

@@ -1,5 +1,5 @@
 import { Seq } from "..";
-import { complement, directionality, guessType } from "../utils";
+import { complement, guessType, parseDirection } from "../utils";
 
 /**
  * Benchling format is just JSON. It's virtually the same format.
@@ -17,7 +17,7 @@ export default async (text: string): Promise<Seq[]> => {
     {
       annotations: partJSON.annotations.map(a => ({
         ...a,
-        direction: directionality(a.strand),
+        direction: parseDirection(a.strand),
       })),
       name: partJSON.name || partJSON._id,
       seq: seq,

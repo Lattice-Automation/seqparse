@@ -14,8 +14,8 @@ interface Annotation {
   name: string;
   start: number;
   end: number;
-  color?: string;
   direction?: number;
+  color?: string;
   type?: string;
 }
 ```
@@ -64,4 +64,19 @@ $ cat pBbE0c-RFP.fasta | seqparse
 
 $ seqparse j5.SBOL.xml | jq -r '.seq'
 ggcagcaaggtctacggcaaggaacagtttttgcggatgcgccagagcatgttccccgatcgc
+
+$ seqparse NC_011521
+{
+  "name": "NC_011521",
+  "type": "dna",
+  "seq": "cccatcttaagacttcacaagactt...",
+  "annotations": [
+    {
+      "name": "HS566_RS00005",
+      "start": 6,
+      "end": 285,
+      "direction": -1,
+      "type": "gene"
+    },
+...
 ```

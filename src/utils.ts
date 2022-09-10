@@ -64,18 +64,6 @@ export const reverseComplement = (inputSeq: string): string => {
   return compSeq.split("").reverse().join("");
 };
 
-/* Extract the date from rows of strings, return first that's valid */
-export const extractDate = (row: string[]): number => {
-  let date = Date.now();
-  row.forEach(other => {
-    if (Date.parse(other)) {
-      // it's a valid date... ie not NaN
-      date = Date.parse(other);
-    }
-  });
-  return date;
-};
-
 export const firstElement = (arr: any) => {
   if (!Array.isArray(arr)) return undefined;
   return arr[0];
@@ -88,11 +76,11 @@ const rev = new Set(["REV", "rev", "REVERSE", "reverse", "BOTTOM", "bottom", "-1
  * Parse the user defined direction, estimate the direction of the element
  *
  * ```js
- * directionality("FWD") => 1
- * directionality("FORWARD") => 1
+ * parseDirection("FWD") => 1
+ * parseDirection("FORWARD") => 1
  * ```
  */
-export const directionality = (direction: number | string | undefined): -1 | 0 | 1 => {
+export const parseDirection = (direction: number | string | undefined): -1 | 0 | 1 => {
   if (!direction) {
     return 0;
   }
@@ -181,11 +169,11 @@ const codon2AA = {
 const aminoAcids = Array.from(new Set(Object.values(codon2AA)).values()).join("");
 const aminoAcidRegex = new RegExp(`^[${aminoAcids}]+$`, "i");
 
-/** Infer the type of a sequence. This is *without* any ambiguous symbols, so maybe wrong by being overly strict. */
+/** Infer the type of a sequence. This only allows a couple wildcard characters so may be overly strict. */
 export const guessType = (seq: string): "dna" | "rna" | "aa" | "unknown" => {
-  if (/^[atgc]+$/i.test(seq)) {
+  if (/^[atgcn.]+$/i.test(seq)) {
     return "dna";
-  } else if (/^[augc]+$/i.test(seq)) {
+  } else if (/^[augcn.]+$/i.test(seq)) {
     return "rna";
   } else if (aminoAcidRegex.test(seq)) {
     return "aa";

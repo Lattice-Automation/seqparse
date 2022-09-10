@@ -1,48 +1,186 @@
 import fetchFile from "./fetchFile";
 
 describe("Fetches files", () => {
-  // test import of some known seqs against their expected properties
+  Object.entries({
+    BBa_J23100: {
+      name: "BBa_J23100",
+      seq: "ttgacggctagctcagtcctaggtacagtgctagc",
+      annotations: [],
+      type: "dna",
+    },
+    NC_011521: {
+      name: "NC_011521",
+      type: "dna",
+      seq: "cccatcttaagacttcacaagacttgtgaaatcagaccactgctcaatgcggaacgcccgaatatcgcggacagaagacggaaaccaaggcagagcttttagctcgttgatggctgaaaacaggttagccatatcttcgttttggcaggtgtacaaacttccctgaatgcgggtaaagccgaatttccgcagggtgtatccaatatccgcgtaggcttgggaaatgcctttcggatggttttgagcggtatcggcaaccaccaaatcaaaagaaatcgcgtacattaggcagcctttgggtcttgaacgatgtgggacagtttgtattgcgtgtgttcgccgctttccggcagttcaatatttacgagccaatcgccgtccggaagctgttcggcaggcgtgccgacgatgtacatcacgccgtaatcgccaaaggtgcggattgaaccggtggggatagtggtttgcatggttagttctcctgttgggtttggttttcaggctggtttgtcatgtacaaaacccgttgggcagctttttcggctgttgtgcgtttgatgccgtcaggcagaaaaattctccattttttggctagaactatatctgcaagatcatcaaccgttgcgcttttcaaagcaggatttgcgttaatttccgaatacagaaaatctttgaatgccgagtacagagcatcgcggtttattgcgtatcttgtcatgctgtttcgctttggttgtcagtttcagacggcataggcttgccgcgcctgtaccaagtggcgcgggaaatgccgaagtgttcccacggtttatcgcggctgatagagttttcggctaggtagtcggcgcgggattgcgaccatgcccgaaaaacggttcttgtggaacagccgaagcgttttgccagttctttagccgtaacgtctcgcttggtggttttcagttttggataggccatatttcaaagctccgtgatgatttttgttctgcctgcattgatggttgttttccgcaaactattccgatgagcctgcaattccgaaaaccgtcgattgctggctgcaatatcaaacttgtaccaaacccagttagcgattgatttggagatacatttcacttctttttcccacatcgggacagggaaatccccatttacccgcatacactggtaatgcacttctttcagccagccttgcaccgtgtagccctgctgtttgaacgccaacacgtttttgtgcgcccaacggctcacaaggttaaacaccgtgcaatttctgcttaatccgaccgcttccacgttagagcgaccgatatagggcttaaacttgtctaaatccacgaaatccgcaagatactccaaatcgtagcccctgattgcgtcaggaacgccgcgcagcgtcagccaatgcggatgttcgggatttttcgtaatcagcgatacaaagcccacatcaccgcgcaatttcgccttatatgctgcttcaagtgcagcaagatagcgcagggctttttgtctcccaccgtattccgccgtcagcacaggcgcggaaagcgcataggcaaggtgtgcgccgccgttttccctgttgattgccgcccaagcaggcataggcagattattgtcttcccaagccaaccccgccccttcgtaatccaagtcaaagagcataaacacacgcagatgcgacggattgacttggatgtagcgacgtttgatggcggcagcgtaagagcgcaccagcataggcgcttctttgaaatctttgcagtatggcttgtgtgggatacgttcttgcaagaagaggtcgggttgggtgtataattggctcatgttgtatctcgaaacccccgtgcagattggcgtttggcgggggttttgctttgtctaagatttgcagattgtatgcttgtttttaagatgatacaactatgtcaaaataaccataatcagataacagcccgataggggttcttatttcaaaattttccaatccgcaatttagcgaagccagcaggcgaagcggtaaagcttggagcgcagcagcgcgacctaagccggccagcagggcggcgttttgggggaaacatgaaaccagttccgacagggcggcgtgcgtgttcttcccggagttcttcatggagtatcggcgaaatgccgtgatgaaatgccgtttttttgagcagaaagcagtcaaaaacaggggtattttgcccttttgacaggttcgagtgccgccgaaaagcgaacaaagcaactcatcatccgagtcagcccgaccgagtttgagactttgacccgacagaagacccatccgaatttagcccgctacattcgggagcgggttttggaagatggcaaagcatccgacaaaaaaaccgtcaaattccaattcccgcccgaagtcgtgcgcgtccttgcaggcatgggtaacaacctgaaccaaatagccaaggccctgaacaccgccgcaaaggtcggcacgttgggcaatgtggaagcactcaaggcgacgaccgagctggcagcgttggaacgttccttaaattccctacgggattttttagccaaagaaaagaacggatggcagtcccaatgattgtgcagtttttcaatagggggaaaggcggcgggagtggtccgatagactatcttctaggcaaagaccgcgaccgagaagaagccagattattacgcggcgaccccgaagaaaccgccgccctgataaacagcagcgattacgccaagaaatacaccgccggctgcctgagctttgaagaaagcaacatccccgccgaacagaaacacgccctgatggacagcttcgaagagtgtatttttgcaggcttggacaaagaccaatacaactgcctatgggtagaacaccgagacaaagggcgtttggaactcaacttcgtgataccgaacatcgagcttttgagcggaaagcggttacagccctactactacgccgccgacagaggaagagtggacgcatggcgcaccatgcagaacctgacgcacggatacagcgacccagacgaccccgccaaacggcagagcatgacccaagccaaagacctgccgagaaacacgcaggaagccgcacagagcatcacagagcatcacagacggcttagaagccctagccctatcaggcaagctaaaaagccgcgcagacgtgctggaaacgctggaaaaggtaggttttgaaatatcacgagcgaccatcagcagcatcagcatcaagaacccggacccaaaagggcgcaacatccgactgaaaggcgcactgtatgagcaagatttccgatttggcgaagaccttcgagcagacatcacgcaccgaagccgccagcatagagcaacaaacgaaagcagacttagagacgttacggaaaaatatcaacgaggcattgaagcaaagcgagcagaaaataaccgccgatataaacgcccggcagttacgcatgagcaaggcagtattcaagccctatctgtggagcttgctaggtatatcggcggcagggttgatagtcatagcagggctgttcatagcgatatggagcgtcaagaacgagctggacgacttgaaacagcagagagccgaagcagagcgcaccctagacctgttggaaaccaagaccaaaggtttgacactggaaaattgcccagtcgagaacagcaaagcaacgcgggtatgcgtagcgaccgagaagcgaatgctggacgcgttagcggaattagagagcaatcacgcagcaatcgagcagcgaatgatgaaagccttaacgcacttgggcgaaaggttggcagagctagagcaggaaaacacgagtttagcgcagcagctagcgagcttggcagccgagttagagcggcagagcgaaatacagcaacggcagagcgaaatcttgaatcaactagccaaacgataagccaacgacacaaacgaacccaaagcaggggatggggaatgagccgatgattaccgagaacgaacgcgacaggcgaacagccgcatggctgatagagacctacggggcagaagccgtagcggaagcagaaacccgcattgcgggtgcgagaaagccctatccgagcgatatcgccaaagtattgggggctagcctacccgaagccctaaaacgcacagaaaacgccgcagcgcgccaaaaactggcagggctgcggcggatttggacggtaaggcagttaagacttcacaaacttgtgggatctggaattcgagctcggtacccggggatccccggggccgtctgaagacggccagtgccaagcttactccccatccccctgttgacaattaatcatcggctcgtataatgtgtggaattgtgatcggataacaatttcacacaggaaacaggatcctctagatttaagaaggagatatacatatgagtaaaggagaagaacttttcactggagttgtcccaattcttgttgaattagatggtgatgttaatgggcacaaattttctgtcagtggagagggtgaaggtgatgcaacatacggaaaacttacccttaaatttatttgcactactggaaaactacctgttccatggccaacacttgtcactactttcggttatggtgttcaatgctttgcgagatacccagatcatatgaaacagcatgactttttcaagagtgccatgcctgaaggttatgtacaggaaagaactatatttttcaaagatgacgggaactacaagacacgtgctgaagtcaagtttgaaggtgatacccttgttaatagaatcgagttaaaaggtattgattttaaagaagatggaaacattcttggacacaaattggaatacaactataactcacacaatgtatacatcatggcagacaaacaaaagaatggaatcaaagttaacttcaaaattagacacaacattgaagatggaagcgttcaactagcagaccattatcaacaaaatactccaattggcgatggccctgtccttttaccagacaaccattacctgtccacacaatctgccctttcgaaagatcccaacgaaaagagagaccacatggtccttcttgagtttgtaacagctgctgggattacacatggcatggatgaactatacaaataaatgtccagacctcctgcaggcatgcaagctagatcccccgggctgcagtactccccatccccctgttgacaattaatcatcggctcgtataatgtgtggaattgtgagcggataacaatttcacacaggaaacaggatcgatccgagattttcaggagctaaggaagctaaaatggagaaaaaaatcactggatataccaccgttgatatatcccaatggcatcgtaaagaacattttgaggcatttcagtcagttgctcaatgtacctataaccaaaccgttcagctggatattacggcctttttaaagaccgtaaagaaaaataagcacaagttttatccggcctttattcacattcttgcccgcctgatgaatgctcatccggaattccgtatggcaatgaaagacggtgagctggtgatatgggatagtgttcacccttgttacaccgttttccatgagcaaactgaaacgttttcatcgctctggagtgaataccacgacgatttccggcagtttctacacatatattcgcaagatgtggcgtgttacggtgaaaacctggcctatttccctaaagggtttattgagaatatgtttttcgtctcagccaatccctgggtgagtttcaccagttttgatttaaacgtggccaatatggacaacttcttcgcccccgttttcaccatgggcaaatattatacgcaaggcgacaaggtgctgatgccgctggcgattcaggttcatcatgccgtttgtgatggcttccatgtcggcagaatgcttaatgaattacaacagtactgcgatgagtggcagggcggggcgtaatttttttaaggcagttattggtgcccttaaacgcctggttgctacgcctgaataagtgataataagcggatgaatggcagaaattcggatcgatc",
+      annotations: [
+        {
+          name: "HS566_RS00005",
+          start: 6,
+          end: 285,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00005",
+          start: 6,
+          end: 285,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00010",
+          start: 284,
+          end: 470,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00010",
+          start: 284,
+          end: 470,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00015",
+          start: 472,
+          end: 718,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00015",
+          start: 472,
+          end: 718,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00020",
+          start: 714,
+          end: 957,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00020",
+          start: 714,
+          end: 957,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00025",
+          start: 960,
+          end: 1830,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00025",
+          start: 960,
+          end: 1830,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00030",
+          start: 1912,
+          end: 2137,
+          direction: -1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00030",
+          start: 1912,
+          end: 2137,
+          direction: -1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00060",
+          start: 2215,
+          end: 2596,
+          direction: 1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00060",
+          start: 2215,
+          end: 2596,
+          direction: 1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00040",
+          start: 2592,
+          end: 3210,
+          direction: 1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00040",
+          start: 2592,
+          end: 3210,
+          direction: 1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00045",
+          start: 3293,
+          end: 3935,
+          direction: 1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00045",
+          start: 3293,
+          end: 3935,
+          direction: 1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00050",
+          start: 4418,
+          end: 5135,
+          direction: 1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00050",
+          start: 4418,
+          end: 5135,
+          direction: 1,
+          type: "CDS",
+        },
+        {
+          name: "HS566_RS00055",
+          start: 5307,
+          end: 5967,
+          direction: 1,
+          type: "gene",
+        },
+        {
+          name: "HS566_RS00055",
+          start: 5307,
+          end: 5967,
+          direction: 1,
+          type: "CDS",
+        },
+      ],
+    },
+  }).forEach(([name, e]) => {
+    it(`fetches: ${name}`, async () => {
+      const result = await fetchFile(name);
 
-  // test a couple files with a known number of annotations/seq length/name
-  // etc to test that it's parsing correctly
-  // just check that the name, annotation count and sequence length are correct
-  const knownGenbanks = {
-    // BBa_J23100: {
-    //   annotationCount: 1,
-    //   name: "BBa_J23100", // one annotation for pSB1C3
-    //   seqLength: 35 + 2070, // J23100 + pSB1C3
-    // },
-    // FJ172221: {
-    //   annotationCount: 5,
-    //   name: "FJ172221",
-    //   seqLength: 6062,
-    // },
-    // NC_011521: {
-    //   annotationCount: 22,
-    //   name: "NC_011521",
-    //   seqLength: 6062,
-    // },
-  };
-
-  // check if name, annotation cound and sequence length are correct
-  Object.keys(knownGenbanks).forEach(file => {
-    it(`imports ${file}`, async () => {
-      const { annotationCount, name, seqLength } = knownGenbanks[file];
-
-      const result = await fetchFile(file);
-
-      expect(result).toBeDefined();
-      expect(result.seq).toHaveLength(seqLength);
-      expect(result.annotations).toHaveLength(annotationCount);
-      expect(result.annotations.map(a => a.name)).not.toContain("Untitled");
-      expect(result.name).toMatch(name);
+      expect(result).toEqual(e);
     });
   });
 
   it("throws error for bad accession", async () => {
     try {
-      const seqs = await fetchFile("asdf");
-      fail(`error expected, seqs returned: ${seqs}`);
+      await fetchFile("asdf");
+      fail("expected error");
     } catch (err) {
       // expected
     }

@@ -1,182 +1,145 @@
-/**
- * Source code for this parser comes from:
- * https://github.com/IsaacLuo/SnapGeneFileReader
- */
-import * as bufferpack from "bufferpack";
-import { StringDecoder } from "string_decoder";
+import { sep } from "path";
 import * as xml2js from "xml2js";
 
-import { Seq } from "..";
-import { complement, guessType } from "../utils";
+import { Annotation, Seq } from "..";
+import { ParseOptions } from "../parseFile";
+import { guessType, parseDirection } from "../utils";
 
-export default async (fileArrayBuffer, options): Promise<Seq[]> => {
-  const { fileName = "" } = options;
-  let offset = 0;
-  const read = (size, fmt) => {
-    const buffer = Buffer.from(fileArrayBuffer.slice(offset, size + offset));
-    offset += size;
-    if (fmt) {
-      const decoder = new StringDecoder(fmt);
-      return decoder.write(buffer);
-    }
-    return buffer;
-  };
-
-  const unpack = async (size, mode) => {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-    const buffer = read(size);
-    const unpacked = await bufferpack.unpack(`>${mode}`, buffer);
-    if (unpacked === undefined) return undefined;
-    return unpacked[0];
-  };
-
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-  read(1); // read the first byte
-
-  // READ THE DOCUMENT PROPERTIES
-  const length = await unpack(4, "I");
-  const title = read(8, "ascii");
-  if (length !== 14 || title !== "SnapGene") {
-    throw new Error("wrong format for a SnapGene file");
+/**
+ * Parse a Snapgene file to Seq[]
+ *
+ * this is adapted from https://github.com/TeselaGen/ve-sequence-parsers/blob/master/src/parsers/snapgeneToJson.js
+ * which was adapted from https://github.com/IsaacLuo/SnapGeneFileReader/blob/master/snapgene_reader/snapgene_reader.py
+ */
+export default async (options?: ParseOptions): Promise<Seq[]> => {
+  if (!options || !options.source) {
+    throw new Error("Failed to parse SnapGene file. No valid file input");
   }
-  const data: Seq = {
-    annotations: [],
+
+  const fileName = options?.fileName || "";
+  const seq = {
+    annotations: [] as Annotation[],
     name: "",
     seq: "",
     type: "unknown",
+    circular: false,
   };
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'isDNA' does not exist on type '{}'.
-  data.isDNA = await unpack(2, "H");
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'exportVersion' does not exist on type '{... Remove this comment to see the full error message
-  data.exportVersion = await unpack(2, "H");
-  // @ts-expect-error ts-migrate(2339) FIXME: Property 'importVersion' does not exist on type '{... Remove this comment to see the full error message
-  data.importVersion = await unpack(2, "H");
+
+  const buffer = Buffer.from(options.source);
+
+  // Accumulate an offset from the start as we read through the file
+  let offset = 0;
+
+  // Read a buffer from the buffer
+  const read = (size: number) => {
+    let start = offset;
+    offset += size;
+    return buffer.subarray(start, offset);
+  };
+
+  // Read from buffer and decode as string
+  const readEnc = (size: number, fmt: BufferEncoding) => read(size).toString(fmt);
+
+  // Read the first byte
+  read(1);
+
+  // Read document properties
+  const length = read(4).readUInt32BE();
+  const title = readEnc(8, "ascii");
+  if (length !== 14 || title !== "SnapGene") {
+    throw new Error(`Wrong format for a SnapGene file: length=${length} title=${title}`);
+  }
+
+  read(2); // isDNA
+  read(2); // exportVersion
+  read(2); // importVersion
 
   /* eslint-disable no-await-in-loop */
-  while (offset <= fileArrayBuffer.byteLength) {
-    // # READ THE WHOLE FILE, BLOCK BY BLOCK, UNTIL THE END
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
+  // READ THE WHOLE FILE, BLOCK BY BLOCK, UNTIL THE END
+  while (offset < buffer.length) {
+    // next_byte table
+    // 0: dna sequence
+    // 1: compressed DNA
+    // 2: unknown
+    // 3: unknown
+    // 5: primers
+    // 6: notes
+    // 7: history tree
+    // 8: additional sequence properties segment
+    // 9: file Description
+    // 10: features
+    // 11: history node
+    // 13: unknown
+    // 16: alignable sequence
+    // 17: alignable sequence
+    // 18: sequence trace
+    // 19: Uracil Positions
+    // 20: custom DNA colors
+
     const nextByte = read(1);
+    const blockSize = read(4).readUInt32BE();
+    const ord = nextByte.toString().charCodeAt(0);
+    if (ord === 0) {
+      // Read the sequence and its properties
+      read(1); // isCircular
 
-    // # next_byte table
-    // # 0: dna sequence
-    // # 1: compressed DNA
-    // # 2: unknown
-    // # 3: unknown
-    // # 5: primers
-    // # 6: notes
-    // # 7: history tree
-    // # 8: additional sequence properties segment
-    // # 9: file Description
-    // # 10: features
-    // # 11: history node
-    // # 13: unknown
-    // # 16: alignable sequence
-    // # 17: alignable sequence
-    // # 18: sequence trace
-    // # 19: Uracil Positions
-    // # 20: custom DNA colors
-
-    const blockSize = await unpack(4, "I");
-    const ordOfNB = ord(nextByte);
-    if (ordOfNB === 0) {
-      //  # READ THE SEQUENCE AND ITS PROPERTIES
-      const props = await unpack(1, "b");
-      const binaryRep = dec2bin(props);
-
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'circular' does not exist on type '{}'.
-      data.circular = isFirstBitA1(binaryRep);
       const size = blockSize - 1;
-      if (size < 0) {
-        throw new Error("error parsing sequence data");
-      }
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'seq' does not exist on type '{}'.
-      data.seq = read(size, "ascii");
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'compSeq' does not exist on type '{}'.
-      data.compSeq = complement(data.seq).compSeq;
-    } else if (ordOfNB === 6) {
-      //  # READ THE NOTES
-      const blockContent = read(blockSize, "utf8");
-      const notes = await editMD(blockContent);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'notes' does not exist on type '{}'.
-      data.notes = notes ? notes.description : "";
-    } else if (ordOfNB === 10) {
-      //  # READ THE FEATURES
-      const directionalityDict = {
-        "0": "NONE",
-        "1": 1,
-        "2": -1,
-        "3": "BIDIRECTIONAL",
-        undefined: "NONE",
-      };
+      if (size < 0) throw new Error("Failed parsing SnapGene: < 0 length sequence");
+      seq.seq = readEnc(size, "ascii");
+    } else if (ord === 10) {
+      // Read all the features
 
-      const xml = read(blockSize, "utf8");
-      const b = await editMD(xml);
-      // @ts-expect-error ts-migrate(2339) FIXME: Property 'Features' does not exist on type 'unknow... Remove this comment to see the full error message
-      const { Features: { Feature = [] } = {} } = b;
-      data.annotations = [];
+      const xml = readEnc(blockSize, "utf8") as string;
+      const b = await new Promise((resolve, reject) => {
+        xml2js.parseString(xml, (err, result) => {
+          if (err) reject(err);
+          resolve(result);
+        });
+      });
+
+      const { Features: { Feature = [] } = {} } = b as { Features: { Feature: any[] } };
       Feature.forEach(({ $: attrs, Segment = [] }) => {
         let minStart = 0;
         let maxEnd = 0;
         if (Segment) {
           Segment.forEach(({ $: seg }) => {
             if (!seg) throw new Error("Invalid feature definition");
-            const { range } = seg;
-            // @ts-expect-error ts-migrate(2339) FIXME: Property 'split' does not exist on type 'never'.
+            const { range } = seg as { range: string };
             const [start, end] = range.split("-");
-            minStart = minStart === 0 ? start : Math.min(minStart, start);
-            maxEnd = Math.max(maxEnd, end);
+            minStart = minStart === 0 ? +start : Math.min(minStart, +start);
+            maxEnd = Math.max(maxEnd, +end);
           });
         }
-        const { directionality } = attrs;
-        data.annotations.push({
-          direction: directionalityDict[directionality],
-          end: maxEnd - 1,
+
+        // create an Annotation
+        seq.annotations.push({
           name: attrs.name,
           start: minStart - 1,
+          end: maxEnd - 1,
           type: attrs.type,
+          direction: parseDirection(
+            {
+              "0": "NONE",
+              "1": 1,
+              "2": -1,
+              "3": "BIDIRECTIONAL",
+              undefined: "NONE",
+            }[attrs.directionality]
+          ),
         });
       });
     } else {
-      // # UNKNOWN: WE IGNORE THE WHOLE BLOCK
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
+      // UNKNOWN: WE IGNORE THE WHOLE BLOCK
       read(blockSize);
     }
   }
 
   return [
     {
-      ...data,
-      name: fileName.replace(".dna", ""),
-      type: guessType(data.seq),
+      ...seq,
+      // snapgene uses the filename as the sequence name
+      name: fileName.split(sep).pop()?.replace(".dna", "") || fileName,
+      type: guessType(seq.seq),
     },
   ];
 };
-
-const ord = string => {
-  //  discuss at: http://locutus.io/php/ord/
-  // original by: Kevin van Zonneveld (http://kvz.io)
-  // bugfixed by: Onno Marsman (https://twitter.com/onnomarsman)
-  // improved by: Brett Zamir (http://brett-zamir.me)
-  //    input by: incidence
-  //   example 1: ord('K')
-  //   returns 1: 75
-  //   example 2: ord('\uD800\uDC00'); // surrogate pair to create a single Unicode character
-  //   returns 2: 65536
-
-  const str = string.toString();
-  const code = str.charCodeAt(0);
-  return code;
-};
-
-const dec2bin = dec => (dec >>> 0).toString(2); // eslint-disable-line no-bitwise
-
-const isFirstBitA1 = num => Number(num.toString().split("").pop()) === 1;
-
-const editMD = str =>
-  new Promise((resolve, reject) => {
-    xml2js.parseString(str, (err, result) => {
-      if (err) reject(err);
-      resolve(result);
-    });
-  });

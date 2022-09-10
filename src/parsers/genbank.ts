@@ -1,5 +1,5 @@
 import { Annotation } from "..";
-import { complement, extractDate, guessType } from "../utils";
+import { complement, guessType } from "../utils";
 
 // a list of recognized types that would constitute an annotation name
 const tagNameSet = new Set(["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host", "locus_tag"]);
@@ -24,7 +24,7 @@ export default async (fileInput: string, fileName: string) =>
       // the first row contains the name of the part and its creation date
       // LOCUS       SCU49845     5028 bp    DNA             PLN       21-JUN-1999
       const HEADER_ROW = file.substring(file.indexOf("LOCUS"), file.search(/\\n|\n/));
-      const [, name, ...headerRest] = HEADER_ROW.split(/\s{2,}/g).filter(h => h);
+      const [, name] = HEADER_ROW.split(/\s{2,}/g).filter(h => h);
 
       // trying to avoid giving a stupid name like Exported which Snapgene has by default
       // also, if there is not name in header, the seq length will be used as name, which should
@@ -59,8 +59,6 @@ export default async (fileInput: string, fileName: string) =>
           parsedName = "Unnamed"; // give up
         }
       }
-
-      const date = extractDate(headerRest);
 
       // the part sequence is contained in and after the line that begins with ORIGIN
       // do this before annotations so we can calc seqlength
@@ -167,7 +165,6 @@ export default async (fileInput: string, fileName: string) =>
 
       return {
         annotations: annotations,
-        date: date,
         name: parsedName.trim() || fileName,
         primers: primers,
         seq: seq,
