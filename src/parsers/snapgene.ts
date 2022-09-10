@@ -1,8 +1,7 @@
 import { sep } from "path";
 import * as xml2js from "xml2js";
 
-import { Annotation, Seq } from "..";
-import { ParseOptions } from "../parseFile";
+import { Annotation, ParseOptions, Seq } from "..";
 import { guessType, parseDirection } from "../utils";
 
 /**

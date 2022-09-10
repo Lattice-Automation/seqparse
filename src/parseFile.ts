@@ -1,6 +1,6 @@
 import { sep } from "path";
 
-import { Seq } from ".";
+import { ParseOptions, Seq } from ".";
 import parseBenchling from "./parsers/benchling";
 import parseBioBrick from "./parsers/biobrick";
 import parseFasta from "./parsers/fasta";
@@ -10,20 +10,6 @@ import parseSbol from "./parsers/sbol";
 import parseSeqBuilder from "./parsers/seqbuilder";
 import parseSnapgene from "./parsers/snapgene";
 import { complement, guessType } from "./utils";
-
-/** Options to parse sequence files. */
-export interface ParseOptions {
-  /** name of the source file */
-  fileName?: string;
-
-  /**
-   * Source of the file (ArrayBuffer). This is necessary for SnapGene.
-   *
-   * Eg after a read from FileReader.readAsArrayBuffer() in a browser:
-   * https://developer.mozilla.org/en-US/docs/Web/API/FileReader/readAsArrayBuffer
-   */
-  source?: ArrayBuffer;
-}
 
 /**
  * parseFile converts the contents of a sequence file to a an array of Seq

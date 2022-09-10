@@ -1,6 +1,7 @@
 import * as fs from "fs";
 
-import parseFile, { ParseOptions } from "./parseFile";
+import { ParseOptions } from ".";
+import parseFile from "./parseFile";
 
 describe("Parses files", () => {
   const types = ["benchling", "biobrick", "fasta", "genbank", "jbei", "sbol/v1", "sbol/v2", "seqbuilder", "snapgene"];

@@ -1,17 +1,17 @@
 import fetch, { Response } from "node-fetch";
 
-import { Seq } from ".";
+import { ParseOptions, Seq } from ".";
 import parseFile from "./parseFile";
 
 /**
  * Get a remote sequence from NCBI or the iGEM registry.
  */
-export default async (accession: string): Promise<Seq> => {
+export default async (accession: string, options?: ParseOptions): Promise<Seq> => {
   // The user doesn't specify the target registry, so we have to infer it from the passed accession: iGEM or NCBI
   let url = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id=${accession.trim()}&rettype=gbwithparts&retmode=text`;
   if (accession.startsWith("BB")) {
     // it's a BioBrick... target the iGEM repo
-    if (typeof window !== "undefined" && typeof process === "undefined") {
+    if ((typeof window !== "undefined" && typeof process === "undefined") || options?.cors) {
       // use this hack to get around a no-CORS setting on iGEM webserver, pending fix on their side
       url = `https://cors-anywhere.herokuapp.com/http://parts.igem.org/cgi/xml/part.cgi?part=${accession.trim()}`;
     } else {
