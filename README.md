@@ -39,21 +39,23 @@ npm i -g seqparse
 Example outputs are truncated for clarity.
 
 ```bash
-$ seqparse NC_011521.gb
+# parse files
+$ seqparse pBbE0c-RFP.gb
 {
-  "name": "NC_011521",
+  "name": "pBbE0c-RFP",
   "type": "dna",
-  "seq": "atgagtaaaggagaagaacttttca...",
+  "seq": "cagctagctcagtcctaggtactgtgctagctacta...",
   "annotations": [
     {
-      "direction": 1,
-      "end": 22,
-      "name": "Primer 1",
-      "start": 0,
-      "type": "primer_bind"
+      "name": "colE1 origin",
+      "start": 1234,
+      "end": 1917,
+      "direction": -1,
+      "type": "rep_origin"
     },
 ...
 
+# parse files from stdin
 $ cat pBbE0c-RFP.fasta | seqparse
 {
   "name": "pBbE0c-RFP.1",
@@ -62,9 +64,11 @@ $ cat pBbE0c-RFP.fasta | seqparse
   "annotations": []
 }
 
+# parse files then use jq to get seqs alone
 $ seqparse j5.SBOL.xml | jq -r '.seq'
 ggcagcaaggtctacggcaaggaacagtttttgcggatgcgccagagcatgttccccgatcgc
 
+# fetch and parse remote sequence files
 $ seqparse NC_011521
 {
   "name": "NC_011521",
