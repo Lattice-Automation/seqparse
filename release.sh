@@ -13,11 +13,11 @@ npm run test
 # run lint
 npm run lint
 
-# bump the package version
-npm version "$1" --git-tag-version
-
 # build the package
 npm run build
+
+# bump the package version
+npm version "$1" --git-tag-version
 
 # git commit the version bump
 git add .

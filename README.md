@@ -34,6 +34,14 @@ npm i -g seqparse
 
 ## Examples
 
+### Library
+
+```ts
+import seqparse from "seqparse";
+
+const { name, type, seq, annotations } = await seqparse(file);
+```
+
 ### CLI
 
 Example outputs are truncated for clarity.
