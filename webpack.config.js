@@ -64,10 +64,15 @@ const cliBuild = {
       { test: /\.(t|j)sx?$/, loader: "ts-loader", exclude: /node_modules/ },
     ],
   },
-  // externals: [nodeExternals({ modulesDir: path.join(__dirname, "node_modules") })],
+  // externals: [],
   resolve: {
     extensions: [".ts"],
     fallback: {
+      buffer: require.resolve("buffer"),
+      fs: false,
+      net: false,
+      tls: false,
+      path: require.resolve("path-browserify"),
       stream: require.resolve("stream-browserify"),
       timers: require.resolve("timers-browserify"),
       url: require.resolve("url"),

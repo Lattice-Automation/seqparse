@@ -29,6 +29,8 @@ export interface Annotation {
   type?: string;
 }
 
+export { ParseOptions };
+
 /* Parse a sequence file. Or download a sequence with an Accession ID. */
 export default async (input: string, options?: ParseOptions): Promise<Seq> => {
   if (!options?.fileName && isAccession(input)) {
