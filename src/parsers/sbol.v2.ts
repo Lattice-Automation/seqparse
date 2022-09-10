@@ -86,17 +86,17 @@ const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
     if (seqElement && seqElement.elements) {
       const { seq } = complement(first(seqElement.elements) || "");
       return {
-        name: first(seqElement.displayId),
-        type: guessType(seq),
-        seq,
         annotations: [],
+        name: first(seqElement.displayId),
+        seq,
+        type: guessType(seq),
       };
     }
     return null;
   };
 
   // if it's a collection of DnaComponents, parse each to a part
-  let seqList: Seq[] = [];
+  const seqList: Seq[] = [];
   // @ts-ignore
   ComponentDefinition?.forEach((c, i) => {
     // we're only making parts out of those with seq info
@@ -128,9 +128,9 @@ const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
     const seq = getSeq(seqID);
     if (seq) {
       seqList.push({
+        annotations,
         name,
         seq: seq.seq,
-        annotations,
         type: seq.type,
       });
     }

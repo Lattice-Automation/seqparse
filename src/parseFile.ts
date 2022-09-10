@@ -124,18 +124,18 @@ export default async (file: string, opts?: ParseOptions): Promise<Seq[]> => {
 
   // bit of clean up to: only return the fields in a Seq and reorder to match expectations.
   return seqs.map(p => ({
-    name: p.name,
-    type: p.type,
-    seq: p.seq,
     annotations: p.annotations
       .sort((a, b) => a.start - b.start || a.end - b.end)
       .map(a => ({
+        color: a.color,
+        direction: a.direction,
+        end: a.end,
         name: a.name,
         start: a.start,
-        end: a.end,
-        direction: a.direction,
         type: a.type,
-        color: a.color,
       })),
+    name: p.name,
+    seq: p.seq,
+    type: p.type,
   }));
 };

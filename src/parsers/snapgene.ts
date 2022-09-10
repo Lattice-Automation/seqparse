@@ -19,10 +19,10 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
   const fileName = options?.fileName || "";
   const seq = {
     annotations: [] as Annotation[],
+    circular: false,
     name: "",
     seq: "",
     type: "unknown",
-    circular: false,
   };
 
   const buffer = Buffer.from(options.source);
@@ -32,7 +32,7 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
 
   // Read a buffer from the buffer
   const read = (size: number) => {
-    let start = offset;
+    const start = offset;
     offset += size;
     return buffer.subarray(start, offset);
   };
@@ -113,10 +113,6 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
 
         // create an Annotation
         seq.annotations.push({
-          name: attrs.name,
-          start: minStart - 1,
-          end: maxEnd - 1,
-          type: attrs.type,
           direction: parseDirection(
             {
               "0": "NONE",
@@ -126,6 +122,10 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
               undefined: "NONE",
             }[attrs.directionality]
           ),
+          end: maxEnd - 1,
+          name: attrs.name,
+          start: minStart - 1,
+          type: attrs.type,
         });
       });
     } else {

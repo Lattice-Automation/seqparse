@@ -63,10 +63,10 @@ export default async (file: string): Promise<Seq[]> =>
       ({ seq } = complement(seq));
       resolve([
         {
-          name,
-          type: guessType(seq),
-          seq,
           annotations: annotations,
+          name,
+          seq,
+          type: guessType(seq),
         },
       ]);
     });
