@@ -3,8 +3,7 @@ import { existsSync, readFileSync } from "fs";
 import pino from "pino";
 import pretty from "pino-pretty";
 
-import seqparse from ".";
-import { ParseOptions } from "./parseFile";
+import seqparse, { ParseOptions } from ".";
 
 /** use LOG_LEVEL=debug for some debugging help */
 const stream = pretty({
