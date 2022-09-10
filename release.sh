@@ -10,6 +10,9 @@ fi
 # run tests
 npm run test
 
+# run lint
+npm run lint
+
 # bump the package version
 npm version "$1" --git-tag-version
 

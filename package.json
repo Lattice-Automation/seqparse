@@ -2,7 +2,8 @@
   "name": "seqparse",
   "version": "0.1.5",
   "description": "Parse sequence files (GenBank, FASTA, SnapGene, SBOL) and accession IDs (NCBI, iGEM) to a common format",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "seqparse": "./dist/cli.js"
   },
