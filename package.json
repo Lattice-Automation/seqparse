@@ -48,6 +48,8 @@
     "node-fetch": "^2.6.7",
     "pino": "^8.5.0",
     "pino-pretty": "^9.1.0",
+    "stream": "^0.0.2",
+    "timers": "^0.1.1",
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
