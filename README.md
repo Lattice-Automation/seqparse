@@ -76,7 +76,7 @@ $ cat pBbE0c-RFP.fasta | seqparse
 $ seqparse j5.SBOL.xml | jq -r '.seq'
 ggcagcaaggtctacggcaaggaacagtttttgcggatgcgccagagcatgttccccgatcgc
 
-# fetch and parse remote sequence files
+# fetch and parse remote sequence files from NCBI
 $ seqparse NC_011521
 {
   "name": "NC_011521",
