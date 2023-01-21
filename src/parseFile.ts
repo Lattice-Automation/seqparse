@@ -14,7 +14,7 @@ import { complement, guessType } from "./utils";
 /**
  * parseFile converts the contents of a sequence file to a an array of Seq
  */
-export default async (file: string, opts?: ParseOptions): Promise<Seq[]> => {
+export default (file: string, opts?: ParseOptions): Seq[] => {
   const fileName = opts?.fileName || "";
   const sourceName = fileName.split(sep).pop() || fileName;
 
@@ -48,7 +48,7 @@ export default async (file: string, opts?: ParseOptions): Promise<Seq[]> => {
     // JBEI
     case prefix.includes(':seq="http://jbei.org/sequence"'):
     case file.startsWith("<seq:seq"):
-      seqs = await parseJbei(file);
+      seqs = parseJbei(file);
       break;
 
     // FASTA
@@ -58,7 +58,7 @@ export default async (file: string, opts?: ParseOptions): Promise<Seq[]> => {
     case fileName.endsWith(".fa"):
     case fileName.endsWith(".fas"):
     case fileName.endsWith(".fasta"):
-      seqs = await parseFasta(file, fileName);
+      seqs = parseFasta(file, fileName);
       break;
 
     // Genbank
@@ -67,34 +67,34 @@ export default async (file: string, opts?: ParseOptions): Promise<Seq[]> => {
     case fileName.endsWith(".gbk"):
     case fileName.endsWith(".genbank"):
     case fileName.endsWith(".ape"):
-      seqs = await parseGenbank(file, fileName);
+      seqs = parseGenbank(file, fileName);
       break;
 
     // SnapGene
     case fileName.endsWith(".dna"):
-      seqs = await parseSnapgene(opts);
+      seqs = parseSnapgene(opts);
       break;
 
     // SeqBuilder
     case prefix.includes("Written by SeqBuilder"):
     case fileName.endsWith(".sbd"):
-      seqs = await parseSeqBuilder(file, fileName);
+      seqs = parseSeqBuilder(file, fileName);
       break;
 
     // BioBrick XML
     case prefix.includes("Parts from the iGEM"):
     case prefix.includes("<part_list>"):
-      seqs = await parseBioBrick(file);
+      seqs = parseBioBrick(file);
       break;
 
     // Benchling JSON
     case isBenchling:
-      seqs = await parseBenchling(file);
+      seqs = parseBenchling(file);
       break;
 
     // SBOL
     case prefix.includes("RDF"):
-      seqs = await parseSbol(file, fileName);
+      seqs = parseSbol(file, fileName);
       break;
 
     // a DNA text file without an official formatting

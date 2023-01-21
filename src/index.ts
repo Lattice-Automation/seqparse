@@ -53,5 +53,7 @@ export default async (input: string, options?: ParseOptions): Promise<Seq> => {
   if (!options?.fileName && isAccession(input)) {
     return await fetchFile(input, options);
   }
-  return (await parseFile(input, options))[0];
+  return parseFile(input, options)[0];
 };
+
+export { parseFile };

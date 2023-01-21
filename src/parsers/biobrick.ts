@@ -1,4 +1,4 @@
-import * as xml2js from "xml2js";
+import { XMLParser } from "fast-xml-parser";
 
 import { Seq } from "..";
 import { complement, firstElement, guessType, parseDirection } from "../utils";
@@ -8,66 +8,54 @@ import { complement, firstElement, guessType, parseDirection } from "../utils";
  *
  * Eg: https://parts.igem.org/cgi/xml/part.cgi?part=BBa_J23100
  */
-export default async (file: string): Promise<Seq[]> =>
-  new Promise((resolve, reject) => {
-    const bail = (err: string) => reject(new Error(`Failed on BioBrick: ${err}`));
+export default (file: string): Seq[] => {
+  const bail = (err: string) => {
+    throw new Error(`Failed on BioBrick: ${err}`);
+  };
 
-    // by default, all nodes are pushed to arrays, even if just a single child element
-    // is present in the XML
-    xml2js.parseString(file, {}, (err, response) => {
-      if (err) bail(`Failed to parse XML: ${err}`);
+  // parse
+  const parsedBiobrick = new XMLParser({
+    isArray: name => {
+      return ["features", "part_name", "sequences"].includes(name);
+    },
+    removeNSPrefix: true,
+  }).parse(file);
 
-      // get the first part
-      let part = firstElement(response.rsbpml.part_list);
-      if (!part || !part.part) bail("No part seen in part_list");
+  // get the first part
+  const { part } = parsedBiobrick.rsbpml.part_list;
+  if (!part) bail("No part seen in part_list");
 
-      // part is also an array... xml...
-      part = firstElement(part.part);
-      if (!part) bail("No part seen in part_list");
+  // extract the useful fields
+  const { features, part_name, sequences } = part;
 
-      // extract the useful fields
-      const { features: featureArray, part_name, sequences } = part;
+  const name = firstElement(part_name);
 
-      // go another level...
-      const seq_data = firstElement(sequences);
-      if (!seq_data || !seq_data.seq_data) bail("No seq_data");
+  // parse the iGEM annotations
+  const annotations = features
+    .map(({ feature }) => {
+      if (!feature) return null;
 
-      let seq = firstElement(seq_data.seq_data);
-      const name = firstElement(part_name);
+      const { direction, endpos, startpos, type } = feature;
 
-      // go another level to get features...
-      let features = firstElement(featureArray);
-      if (features && "feature" in features) {
-        features = features.feature;
-      } else {
-        features = [];
-      }
+      return {
+        direction: parseDirection(direction),
+        end: +endpos,
+        name: `${direction}-${startpos}`,
+        start: +startpos || 0,
+        type: type || undefined,
+      };
+    })
+    .filter(a => a);
 
-      // parse the iGEM annotations
-      const annotations = features
-        .map(f => {
-          if (!f) return null;
+  // parse the sequence
+  const { seq } = complement(sequences[0].seq_data);
 
-          const { direction, endpos, startpos, type } = f;
-
-          return {
-            direction: parseDirection(direction[0]),
-            end: +endpos[0] || 0,
-            name: `${direction[0]}-${startpos[0]}`,
-            start: +startpos[0] || 0,
-            type: type[0] || undefined,
-          };
-        })
-        .filter(a => a);
-
-      ({ seq } = complement(seq));
-      resolve([
-        {
-          annotations: annotations,
-          name,
-          seq,
-          type: guessType(seq),
-        },
-      ]);
-    });
-  });
+  return [
+    {
+      annotations: annotations,
+      name,
+      seq,
+      type: guessType(seq),
+    },
+  ];
+};

@@ -6,7 +6,7 @@ import seqparse, { ParseOptions } from ".";
 /** a crappy but dependency-free log implementation */
 const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 const debug = (msg: string) => {
-  if (LOG_LEVEL !== "debug") {
+  if (LOG_LEVEL.toLowerCase() !== "debug") {
     return;
   }
   console.log(`[DEBUG] ${msg}`);

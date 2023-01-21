@@ -45,10 +45,10 @@
   "homepage": "https://github.com/Lattice-Automation/seqparse#readme",
   "dependencies": {
     "buffer": "^6.0.3",
+    "fast-xml-parser": "^4.0.13",
     "node-fetch": "^2.6.7",
     "stream": "^0.0.2",
-    "timers": "^0.1.1",
-    "xml2js": "^0.4.23"
+    "timers": "^0.1.1"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^3.2.0",

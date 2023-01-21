@@ -1,4 +1,4 @@
-import * as xml2js from "xml2js";
+import { XMLParser } from "fast-xml-parser";
 
 import { Annotation, Seq } from "..";
 import { complement, guessType } from "../utils";
@@ -19,21 +19,122 @@ import { complement, guessType } from "../utils";
 */
 
 /**
+ * takes an SBOL file, as a string, and converts it into our DB
+ * representation of a part(s). an example of this type of file can be
+ * found in ../examples/j5.SBOL.xml
+ */
+export default (sbol: string): Seq[] => {
+  // weird edge case with directed quotation characters
+  const fileString = sbol.replace(/“|”/g, '"');
+
+  // parse
+  const parsedSBOL = new XMLParser({
+    ignoreAttributes: false,
+    isArray: name =>
+      [
+        "Sequence",
+        "Collection",
+        "DnaComponent",
+        "dnaSequence",
+        "ComponentDefinition",
+        "SequenceAnnotation",
+        "sequenceAnnotation",
+        "elements",
+        "component",
+        "annotation",
+      ].includes(name),
+    removeNSPrefix: true,
+  }).parse(fileString);
+
+  let RDF = null;
+  if (parsedSBOL.RDF) ({ RDF } = parsedSBOL);
+
+  // @ts-expect-error ts-migrate(2339) FIXME: Property 'Collection' does not exist on type 'null... Remove this comment to see the full error message
+  const { Collection, DnaComponent } = RDF;
+  if (Collection && Collection.length) {
+    // it's a collection of DnaComponents, parse each to a part
+    const partList = [];
+    Collection.forEach(({ component }) => {
+      if (component && component.length) {
+        component.forEach(({ DnaComponent: nestedDnaComponent }) => {
+          partList.push(
+            // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ seq: string; compSeq: string; ... Remove this comment to see the full error message
+            dnaComponentToPart(nestedDnaComponent[0], {
+              file: sbol,
+              strict: false,
+            })
+          );
+        });
+      }
+    });
+
+    // check whether any parts were created from the collection
+    if (partList.length) return partList;
+  } else if (DnaComponent && DnaComponent.length) {
+    // create a single part from the single one passed
+    const validPart = dnaComponentToPart(DnaComponent[0], {
+      file: sbol,
+      strict: false,
+    });
+    // it will be null if there isn't any sequence information beneath it
+    if (validPart) return [validPart];
+  }
+
+  // go on a fishing expedition for DnaComponents
+  // everything else has failed
+  // accumulate all that are "valid" (name + seq)
+  const dnaComponentAccumulator = [];
+  findDnaComponentNodes(dnaComponentAccumulator, RDF);
+
+  // @ts-ignore
+  const attemptedSeqs: Seq[] = dnaComponentAccumulator
+    .map(p =>
+      dnaComponentToPart(p, {
+        file: sbol,
+        strict: true,
+      })
+    )
+    .filter(p => !!p); // invalid parts will be null
+  if (attemptedSeqs.length) return attemptedSeqs;
+
+  // go on another fishing expedition, but for Sequence nodes
+  const dnaSequenceAccumulator = [];
+  findSequenceNodes(dnaSequenceAccumulator, RDF);
+  return dnaSequenceAccumulator.map(p => sequenceToPart(p, sbol)).filter(p => p); // invalid parts will be null
+};
+
+/**
+ * find all the nodes within the JSON document that are keyed "Sequence"
+ *
+ * this is another last-resort scrapper for trying to find valid parts
+ */
+const findSequenceNodes = (acc, doc) => {
+  Object.keys(doc).forEach(k => {
+    if (k === "Sequence" && doc[k].length) acc.push(...doc[k]);
+    if (Array.isArray(doc[k])) {
+      doc[k].forEach(nestedNode => {
+        findSequenceNodes(acc, nestedNode);
+      });
+    }
+  });
+};
+
+/**
  * after getting a DnaComponent out of the SBOL document,
  * at either the root RDF level or from within a Collection/Annotation
- * heirarchy, convert that DnaComponent to a Seq
+ * hierarchy, convert that DnaComponent to a Seq
  */
 const dnaComponentToPart = (DnaComponent, options) => {
-  const { file, strict = false } = options;
-  // destructure the paramaeters from DnaComponent
+  const { strict = false } = options;
+  // destructure the params from DnaComponent
   const { annotation, displayId, dnaSequence, name } = DnaComponent;
 
   // attempt to get the name out of the SBOL
   let parsedName = "Unnamed";
-  if (name && name[0] && name[0]._) {
-    parsedName = name[0]._;
-  } else if (displayId && displayId[0] && displayId[0]._) {
-    parsedName = displayId[0]._;
+  if (name) {
+    parsedName = name;
+  } else if (displayId) {
+    parsedName = displayId;
   } else if (strict) {
     // in this scenario, we're really scrapping to find parts, but shouldn't
     // accept any that don't at least have some name and sequence information
@@ -42,18 +143,11 @@ const dnaComponentToPart = (DnaComponent, options) => {
 
   // attempt to get the sequence. fail if it's not findable
   let seq = "";
-  if (dnaSequence && dnaSequence[0] && dnaSequence[0].DnaSequence) {
-    const { DnaSequence } = dnaSequence[0];
-    if (
-      DnaSequence[0] &&
-      DnaSequence[0].nucleotides &&
-      DnaSequence[0].nucleotides[0] &&
-      DnaSequence[0].nucleotides[0]._
-    ) {
-      seq = DnaSequence[0].nucleotides[0]._;
-    }
+  if (dnaSequence && dnaSequence[0].DnaSequence) {
+    seq = dnaSequence[0].DnaSequence.nucleotides;
   }
-  const { compSeq: parsedCompSeq, seq: parsedSeq } = complement(seq); // seq and compSeq
+
+  const { seq: parsedSeq } = complement(seq); // seq and compSeq
   if (!parsedSeq) return null;
 
   // attempt to parse the SBOL annotations into our version of annotations
@@ -62,31 +156,23 @@ const dnaComponentToPart = (DnaComponent, options) => {
     annotation.forEach(({ SequenceAnnotation }) => {
       if (!SequenceAnnotation || !SequenceAnnotation[0]) return;
 
-      const { bioStart = [{}], bioEnd = [{}], strand, subComponent } = SequenceAnnotation[0];
-      if (subComponent && subComponent[0] && subComponent[0].DnaComponent && subComponent[0].DnaComponent[0]) {
-        const { type: annType = [{}], displayId: annId = [{}], name: annName = [{}] } = subComponent[0].DnaComponent[0];
+      const { bioEnd, bioStart, strand, subComponent } = SequenceAnnotation[0];
+      if (subComponent && subComponent.DnaComponent && subComponent.DnaComponent[0]) {
+        const { displayId: annId, name: annName, type: annType } = subComponent.DnaComponent[0];
 
         annotations.push({
-          // we're 0-based
-          direction: strand[0]._ === "+" ? 1 : -1,
-          // sbol is 1-based
-          end: bioEnd[0]._ || 0,
-          name: annName[0]._ || annId[0]._ || "Untitled",
-          start: bioStart[0]._ - 1 || 0,
-          type: annType[0]._ || "N/A",
+          direction: strand === "+" ? 1 : -1,
+          end: bioEnd - 1 || 0,
+          name: annName || annId || "Untitled",
+          start: bioStart - 1 || 0,
+          type: annType["@_resource"] || "N/A",
         });
       }
     });
   }
 
-  // guess whether it's circular or not based on the presence of a word like vector.
-  // very ad hoc
-  const circular = file.search(/plasmid/i) > 0;
-
   return {
     annotations: annotations,
-    circular: circular,
-    compSeq: parsedCompSeq,
     name: parsedName,
     seq: parsedSeq,
     type: guessType(seq),
@@ -96,15 +182,14 @@ const dnaComponentToPart = (DnaComponent, options) => {
 /**
  * find all nodes that of the type Sequence, and convert those to parts "Sequence" -> Part
  *
- 
  * this is not the standard format. see A1.xml
  */
 const sequenceToPart = (Seq, file) => {
   // get the name
-  const name = (Seq.displayId[0] && Seq.displayId[0]._) || (Seq.title[0] && Seq.title[0]._) || "Unnamed";
+  const name = Seq.displayId || Seq.title || "Unnamed";
 
   // get the sequence
-  const seqOrig = (Seq.elements[0] && Seq.elements[0]._) || "";
+  const seqOrig = Seq.elements[0] || "";
 
   const { compSeq, seq } = complement(seqOrig);
 
@@ -131,110 +216,3 @@ const findDnaComponentNodes = (acc: Seq[], doc: any) => {
     }
   });
 };
-
-/**
- * find all the nodes within the JSON document that are keyed "Sequence"
- *
- * this is another last-resort scrapper for trying to find valid parts
- */
-const findSequenceNodes = (acc, doc) => {
-  Object.keys(doc).forEach(k => {
-    if (k === "Sequence" && doc[k].length) acc.push(...doc[k]);
-    if (Array.isArray(doc[k])) {
-      doc[k].forEach(nestedNode => {
-        findSequenceNodes(acc, nestedNode);
-      });
-    }
-  });
-};
-
-/**
- * takes an SBOL file, as a string, and converts it into our DB
- * representation of a part(s). an example of this type of file can be
- * found in ../examples/j5.SBOL.xml
- */
-export default async (sbol: string): Promise<Seq[]> =>
-  new Promise((resolve, reject) => {
-    // it shouldn't take longer than this to parse the SBOL file
-    setTimeout(() => {
-      reject(new Error("Took to long to parse SBOL"));
-    }, 2000);
-
-    // util reject function that will be triggered if any fields fail
-    const rejectSBOL = errType => reject(new Error(`Failed on SBOL file; ${errType}`));
-
-    // weird edge case with directed quotation characters
-    const fileString = sbol.replace(/“|”/g, '"');
-
-    xml2js.parseString(
-      fileString,
-      {
-        attrkey: "xml_tag",
-        tagNameProcessors: [xml2js.processors.stripPrefix],
-        xmlns: true,
-      },
-      (err, parsedSBOL) => {
-        if (err) rejectSBOL(err);
-        let RDF = null;
-        if (parsedSBOL.RDF) ({ RDF } = parsedSBOL);
-        if (!RDF) reject(new Error("No root RDF document"));
-
-        // @ts-expect-error ts-migrate(2339) FIXME: Property 'Collection' does not exist on type 'null... Remove this comment to see the full error message
-        const { Collection, DnaComponent } = RDF;
-        if (Collection && Collection.length) {
-          // it's a collection of DnaComponents, parse each to a part
-          const partList = [];
-          Collection.forEach(({ component }) => {
-            if (component && component.length) {
-              component.forEach(({ DnaComponent: nestedDnaComponent }) => {
-                partList.push(
-                  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ seq: string; compSeq: string; ... Remove this comment to see the full error message
-                  dnaComponentToPart(nestedDnaComponent[0], {
-                    file: sbol,
-                    strict: false,
-                  })
-                );
-              });
-            }
-          });
-
-          // check whether any parts were created from the collection
-          if (partList.length) resolve(partList);
-        } else if (DnaComponent && DnaComponent.length) {
-          // create a single part from the single one passed
-          const validPart = dnaComponentToPart(DnaComponent[0], {
-            file: sbol,
-            strict: false,
-          });
-          // it will be null if there isnt' any sequence information beneath it
-          if (validPart) resolve([validPart]);
-        }
-
-        // go on a fishing expedition for DnaComponents
-        // everything else has failed
-        // accumulate all that are "valid" (name + seq)
-        const dnaComponentAccumulator = [];
-        findDnaComponentNodes(dnaComponentAccumulator, RDF);
-
-        // @ts-ignore
-        const attemptedSeqs: Seq[] = dnaComponentAccumulator
-          .map(p =>
-            dnaComponentToPart(p, {
-              file: sbol,
-              strict: true,
-            })
-          )
-          .filter(p => !!p); // invalid parts will be null
-        if (attemptedSeqs.length) resolve(attemptedSeqs);
-
-        // go on another fishing expedition, but for Sequence nodes
-        const dnaSequenceAccumulator = [];
-        findSequenceNodes(dnaSequenceAccumulator, RDF);
-        const sequenceNodes = dnaSequenceAccumulator.map(p => sequenceToPart(p, sbol)).filter(p => p); // invalid parts will be null
-        if (sequenceNodes.length) resolve(sequenceNodes);
-
-        // neither a DnaComponent nor Collection was found anywhere in document
-        reject(new Error("no valid DnaComponent or Collection"));
-      }
-    );
-  });

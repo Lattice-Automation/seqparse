@@ -1,16 +1,16 @@
+import { XMLParser } from "fast-xml-parser";
 import { sep } from "path";
-import * as xml2js from "xml2js";
 
 import { Annotation, ParseOptions, Seq } from "..";
 import { guessType, parseDirection } from "../utils";
 
 /**
- * Parse a Snapgene file to Seq[]
+ * Parse a SnapGene file to Seq[]
  *
  * this is adapted from https://github.com/TeselaGen/ve-sequence-parsers/blob/master/src/parsers/snapgeneToJson.js
  * which was adapted from https://github.com/IsaacLuo/SnapGeneFileReader/blob/master/snapgene_reader/snapgene_reader.py
  */
-export default async (options?: ParseOptions): Promise<Seq[]> => {
+export default (options?: ParseOptions): Seq[] => {
   if (!options || !options.source) {
     throw new Error("Failed to parse SnapGene file. No valid file input");
   }
@@ -87,28 +87,21 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
       seq.seq = readEnc(size, "ascii");
     } else if (ord === 10) {
       // Read all the features
-
       const xml = readEnc(blockSize, "utf8") as string;
-      const b = await new Promise((resolve, reject) => {
-        xml2js.parseString(xml, (err, result) => {
-          if (err) reject(err);
-          resolve(result);
-        });
-      });
+      const b = new XMLParser({
+        attributeNamePrefix: "",
+        ignoreAttributes: false,
+        isArray: name => name === "Q" || name === "Segment",
+        removeNSPrefix: true,
+      }).parse(xml);
 
-      const { Features: { Feature = [] } = {} } = b as { Features: { Feature: any[] } };
-      Feature.forEach(({ $: attrs, Segment = [] }) => {
+      b.Features.Feature.forEach(feature => {
         let minStart = 0;
         let maxEnd = 0;
-        if (Segment) {
-          Segment.forEach(({ $: seg }) => {
-            if (!seg) throw new Error("Invalid feature definition");
-            const { range } = seg as { range: string };
-            const [start, end] = range.split("-");
-            minStart = minStart === 0 ? +start : Math.min(minStart, +start);
-            maxEnd = Math.max(maxEnd, +end);
-          });
-        }
+        const { range } = feature.Segment[0];
+        const [start, end] = range.split("-");
+        minStart = minStart === 0 ? +start : Math.min(minStart, +start);
+        maxEnd = Math.max(maxEnd, +end);
 
         // create an Annotation
         seq.annotations.push({
@@ -119,12 +112,12 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
               "2": -1,
               "3": "BIDIRECTIONAL",
               undefined: "NONE",
-            }[attrs.directionality]
+            }[feature.directionality]
           ),
           end: maxEnd - 1,
-          name: attrs.name,
+          name: feature.name,
           start: minStart - 1,
-          type: attrs.type,
+          type: feature.type,
         });
       });
     } else {
@@ -136,7 +129,7 @@ export default async (options?: ParseOptions): Promise<Seq[]> => {
   return [
     {
       ...seq,
-      // snapgene uses the filename as the sequence name
+      // SnapGene uses the filename as the sequence name
       name: fileName.split(sep).pop()?.replace(".dna", "") || fileName,
       type: guessType(seq.seq),
     },

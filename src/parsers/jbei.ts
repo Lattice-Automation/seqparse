@@ -1,4 +1,4 @@
-import * as xml2js from "xml2js";
+import { XMLParser } from "fast-xml-parser";
 
 import { Annotation, Seq } from "..";
 import { complement, guessType } from "../utils";
@@ -8,69 +8,55 @@ import { complement, guessType } from "../utils";
  *
  * https://j5.jbei.org/j5manual/pages/94.html
  */
-export default async (JBEI: string): Promise<Seq[]> =>
-  new Promise((resolve, reject) => {
-    // weird edge case with directed quotation characters
-    const fileString = JBEI.replace(/“|”/g, '"');
+export default (JBEI: string): Seq[] => {
+  // weird edge case with directed quotation characters
+  const fileString = JBEI.replace(/“|”/g, '"');
 
-    xml2js.parseString(
-      fileString,
-      {
-        attrkey: "xml_tag",
-        tagNameProcessors: [xml2js.processors.stripPrefix],
-        xmlns: true,
-      },
-      (err, parsedJBEI) => {
-        if (err) {
-          reject(new Error(`Failed to parse JBEI file: ${err}`));
-        }
+  // parse
+  const parsedJbei = new XMLParser({
+    removeNSPrefix: true,
+  }).parse(fileString);
 
-        // destructure the paramaeters from JBEI
-        const { seq } = parsedJBEI;
-        const { features, name, sequence } = seq;
+  // destructure the parameters from JBEI
+  const { seq } = parsedJbei;
+  const { features, name, sequence } = seq;
 
-        // attempt to get the name out of the JBEI
-        let parsedName = "Unnamed";
-        if (name && name[0] && name[0]._) {
-          parsedName = name[0]._;
-        }
+  // attempt to get the name out of the JBEI
+  let parsedName = "Unnamed";
+  if (name) {
+    parsedName = name;
+  }
 
-        // attempt to get the sequence. fail if it's not findable
-        let parsedSeq = "";
-        if (sequence && sequence[0] && sequence[0]._) {
-          parsedSeq = sequence[0]._;
-        }
-        const { seq: parsedSeq2 } = complement(parsedSeq); // seq and compSeq
-        if (!parsedSeq2) return null;
+  // attempt to get the sequence. fail if it's not findable
+  const { seq: parsedSeq } = complement(sequence); // seq and compSeq
+  if (!parsedSeq) return [];
 
-        // attempt to parse the JBEI annotations into our version of annotations
-        const annotations: Annotation[] = [];
-        if (features && features[0] && features[0].feature) {
-          features[0].feature.forEach(feature => {
-            if (!feature) return;
+  // attempt to parse the JBEI annotations into our version of annotations
+  const annotations: Annotation[] = [];
+  if (features && features.feature) {
+    features.feature.forEach(feature => {
+      if (!feature) return;
 
-            const { label = [{}], type = [{}], complement = [{}], location = [] } = feature;
-            if (location && location[0] && location[0].genbankStart && location[0].end) {
-              annotations.push({
-                direction: complement[0]._ === "true" ? -1 : 1,
-                // JBEI is 1-based
-                end: +location[0].end[0]._ || 0,
-                name: label[0]._ || "Untitled",
-                start: +location[0].genbankStart[0]._ - 1 || 0,
-                type: type[0]._ || "N/A",
-              });
-            }
-          });
-        }
-
-        resolve([
-          {
-            annotations: annotations,
-            name: parsedName,
-            seq: parsedSeq2,
-            type: guessType(parsedSeq2),
-          },
-        ]);
+      const { complement, label, location, type } = feature;
+      if (location && location.genbankStart && location.end) {
+        annotations.push({
+          direction: complement ? -1 : 1,
+          // JBEI is 1-based
+          end: +location.end || 0,
+          name: label || "Untitled",
+          start: +location.genbankStart - 1 || 0,
+          type: type || "N/A",
+        });
       }
-    );
-  });
+    });
+  }
+
+  return [
+    {
+      annotations: annotations,
+      name: parsedName,
+      seq: parsedSeq,
+      type: guessType(parsedSeq),
+    },
+  ];
+};

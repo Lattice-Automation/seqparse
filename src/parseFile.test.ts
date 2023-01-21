@@ -194,6 +194,38 @@ describe("Parses files", () => {
         type: "dna",
       },
     ],
+    "sbol/v1/example.xml": [
+      {
+        annotations: [
+          {
+            direction: 1,
+            end: 18,
+            name: "TetR 1",
+            start: 0,
+            type: "http://purl.obolibrary.org/obo/SO_0000409",
+          },
+        ],
+        name: "T9002",
+        seq: "tcc",
+        type: "dna",
+      },
+    ],
+    "sbol/v1/j5.SBOL.xml": [
+      {
+        annotations: [
+          {
+            direction: 1,
+            end: 62,
+            name: "signal_peptide",
+            start: 0,
+            type: "http://purl.obolibrary.org/obo/SO_0000316",
+          },
+        ],
+        name: "signal_pep",
+        seq: "ggcagcaaggtctacggcaaggaacagtttttgcggatgcgccagagcatgttccccgatcgc",
+        type: "dna",
+      },
+    ],
     "sbol/v2/BBa_I0462.xml": [
       {
         annotations: [

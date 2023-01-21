@@ -4,13 +4,13 @@ import { complement, guessType, parseDirection } from "../utils";
 /**
  * Benchling format is just JSON. It's virtually the same format.
  */
-export default async (text: string): Promise<Seq[]> => {
+export default (text: string): Seq[] => {
   const partJSON = JSON.parse(text);
   const { seq } = complement(partJSON.bases);
 
   // throw an error if the sequence is empty
   if (seq.length < 1) {
-    return Promise.reject(new Error("Invalid Benchling part: empty sequence"));
+    throw new Error("Invalid Benchling part: empty sequence");
   }
 
   return [

@@ -1,7 +1,7 @@
 import { Seq } from "..";
 import { guessType } from "../utils";
 
-export default async (text: string, fileName: string): Promise<Seq[]> => {
+export default (text: string, fileName: string): Seq[] => {
   // partFactory returns a negative "circular" prop, we assume they're all linear
   if (text.trim().startsWith(">")) {
     return text

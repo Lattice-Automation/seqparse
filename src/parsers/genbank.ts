@@ -16,7 +16,7 @@ const tagColorSet = new Set(["ApEinfo_fwdcolor", "ApEinfo_revcolor", "loom_color
  * another official example can be found at:
  * https://www.ncbi.nlm.nih.gov/Sitemap/samplerecord.html
  */
-export default async (fileInput: string, fileName: string) =>
+export default (fileInput: string, fileName: string) =>
   fileInput
     .split(/\/\/\s/g)
     .filter(f => f.length > 5)

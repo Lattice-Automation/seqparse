@@ -1,18 +1,7 @@
-import * as xml2js from "xml2js";
+import { XMLParser } from "fast-xml-parser";
 
 import { Annotation, Seq } from "..";
 import { complement, guessType } from "../utils";
-
-// get the first string/number child out of an array of possible null elements
-const first = elArr => {
-  if (elArr && elArr[0]) {
-    if (elArr[0]._) {
-      return elArr[0]._;
-    }
-    return elArr[0];
-  }
-  return null;
-};
 
 /**
  * Converts an SBOL file to our Seq format.
@@ -22,37 +11,30 @@ const first = elArr => {
  * and the sequence and annotations are separated (they're no longer defined relationally
  * by nesting but, instead, by id) we only care about components that have sequence information
  */
-export default async (sbol: string, fileName: string): Promise<Seq[]> =>
-  new Promise((resolve, reject) => {
-    // weird edge case with directed quotation characters
-    const fileString = sbol.replace(/“|”/g, '"');
+export default (sbol: string, fileName: string): Seq[] => {
+  // weird edge case with directed quotation characters
+  const fileString = sbol.replace(/“|”/g, '"');
 
-    xml2js.parseString(
-      fileString,
-      {
-        attrkey: "xml_tag",
-        tagNameProcessors: [xml2js.processors.stripPrefix],
-        xmlns: true,
-      },
-      (err, parsedSBOL) => {
-        if (err) {
-          reject(new Error(`Failed to parse SBOL v2: ${err}`));
-        }
+  // parse
+  const parsedSBOL = new XMLParser({
+    ignoreAttributes: false,
+    isArray: name =>
+      ["Sequence", "ComponentDefinition", "SequenceAnnotation", "sequenceAnnotation", "elements"].includes(name),
+    removeNSPrefix: true,
+  }).parse(fileString);
 
-        try {
-          const seqList = parseSBOL2(parsedSBOL, fileName);
+  try {
+    const seqList = parseSBOL2(parsedSBOL, fileName);
 
-          if (seqList.length) {
-            resolve(seqList);
-          } else {
-            throw new Error("No Sequence info found");
-          }
-        } catch (err) {
-          reject(`Failed to parse SBOL v2 file: ${err}`);
-        }
-      }
-    );
-  });
+    if (seqList.length) {
+      return seqList;
+    } else {
+      throw new Error("No Sequence info found");
+    }
+  } catch (err) {
+    throw new Error(`Failed to parse SBOL v2 file: ${err}`);
+  }
+};
 
 const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
   let RDF = null;
@@ -76,18 +58,16 @@ const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
       ? // @ts-ignore
         Sequence.find(
           s =>
-            (s.persistentIdentity &&
-              s.persistentIdentity.length &&
-              s.persistentIdentity[0].xml_tag["rdf:resource"].value === seqID) ||
-            s.xml_tag["rdf:about"].value === seqID
+            (s.persistentIdentity && s.persistentIdentity.length && s.persistentIdentity["@_resource"] === seqID) ||
+            s["@_about"] === seqID
         )
-      : first(Sequence);
+      : Sequence[0];
 
     if (seqElement && seqElement.elements) {
-      const { seq } = complement(first(seqElement.elements) || "");
+      const { seq } = complement(seqElement.elements[0] || "");
       return {
         annotations: [],
-        name: first(seqElement.displayId),
+        name: seqElement.displayId,
         seq,
         type: guessType(seq),
       };
@@ -100,32 +80,31 @@ const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
   // @ts-ignore
   ComponentDefinition?.forEach((c, i) => {
     // we're only making parts out of those with seq info
-    if (!c.sequence || !c.sequence.length) {
+    if (!c.sequence) {
       return;
     }
 
     const { displayId, sequence, sequenceAnnotation } = c;
-    const name = first(displayId) || `${fileName}_${i + 1}`;
+    const name = displayId || `${fileName}_${i + 1}`;
 
     const annotations: Annotation[] = [];
     (sequenceAnnotation || []).forEach(({ SequenceAnnotation }) => {
       const ann = SequenceAnnotation[0];
-      const annId = first(ann.displayId);
-      const { Range } = first(ann.location);
+      const annId = ann.displayId;
+      const { Range } = ann.location;
 
-      const range = first(Range);
+      const range = Range;
       if (range) {
         annotations.push({
-          end: first(range.end) - 1,
+          end: range.end - 1,
           name: annId,
-          start: first(range.start) - 1,
+          start: range.start - 1,
         });
       }
     });
 
-    const seqID = first(sequence)?.xml_tag["rdf:resource"]?.value;
+    const seq = getSeq(sequence["@_resource"]);
 
-    const seq = getSeq(seqID);
     if (seq) {
       seqList.push({
         annotations,
