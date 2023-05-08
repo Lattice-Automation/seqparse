@@ -21,6 +21,8 @@ const webBuild = {
     path: path.join(__dirname, "dist"),
     publicPath: "/dist/",
     umdNamedDefine: true,
+    // https://stackoverflow.com/questions/64639839/typescript-webpack-library-generates-referenceerror-self-is-not-defined
+    globalObject: 'this',
   },
   module: {
     rules: [
