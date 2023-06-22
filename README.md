@@ -1,5 +1,7 @@
 # seqparse
 
+[![npm version](https://badge.fury.io/js/seqparse.svg)](https://www.npmjs.com/package/seqparse)
+
 Parse sequence files (GenBank, FASTA, JBEI, SnapGene, SBOL) or accession IDs (NCBI, iGEM) to a simple, common format:
 
 ```ts
