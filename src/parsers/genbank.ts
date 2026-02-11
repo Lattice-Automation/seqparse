@@ -2,7 +2,7 @@ import { Annotation } from "..";
 import { complement, guessType } from "../utils";
 
 // a list of recognized types that would constitute an annotation name
-const tagNameSet = new Set(["gene", "product", "note", "db_xref", "protein_id", "label", "lab_host", "locus_tag"]);
+const tagNameSet = new Set(["gene", "product", "db_xref", "protein_id", "label", "lab_host", "locus_tag", "note"]);
 
 // a list of tags that could represent colors
 const tagColorSet = new Set(["ApEinfo_fwdcolor", "ApEinfo_revcolor", "loom_color"]);
