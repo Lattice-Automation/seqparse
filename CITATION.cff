@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+title: SeqParse
+message: "If you use this software, please cite it using the metadata below."
+type: software
+authors:
+  - family-names: Timmons
+    given-names: Joshua
+    affiliation: Lattice Automation
+version: 0.2.1
+date-released: 2022-11-01  # approximate — verify against npm publish history
+license: MIT
+url: https://github.com/Lattice-Automation/seqparse
+repository-code: https://github.com/Lattice-Automation/seqparse
