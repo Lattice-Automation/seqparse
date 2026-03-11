@@ -51,7 +51,7 @@
     "timers": "^0.1.1"
   },
   "devDependencies": {
-    "@trivago/prettier-plugin-sort-imports": "^3.2.0",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/jest": "^28.1.8",
     "@types/node": "^18.7.15",
     "@types/node-fetch": "^2.6.2",
