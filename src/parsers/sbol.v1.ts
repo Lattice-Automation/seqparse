@@ -62,7 +62,7 @@ export default (sbol: string): Seq[] => {
             dnaComponentToPart(nestedDnaComponent[0], {
               file: sbol,
               strict: false,
-            })
+            }),
           );
         });
       }
@@ -92,7 +92,7 @@ export default (sbol: string): Seq[] => {
       dnaComponentToPart(p, {
         file: sbol,
         strict: true,
-      })
+      }),
     )
     .filter(p => !!p); // invalid parts will be null
   if (attemptedSeqs.length) return attemptedSeqs;

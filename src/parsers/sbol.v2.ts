@@ -59,7 +59,7 @@ const parseSBOL2 = (parsedSBOL, fileName: string): Seq[] => {
         Sequence.find(
           s =>
             (s.persistentIdentity && s.persistentIdentity.length && s.persistentIdentity["@_resource"] === seqID) ||
-            s["@_about"] === seqID
+            s["@_about"] === seqID,
         )
       : Sequence[0];
 

@@ -2,12 +2,13 @@ import fetchFile from "./fetchFile";
 
 describe("Fetches files", () => {
   Object.entries({
-    BBa_J23100: {
-      annotations: [],
-      name: "BBa_J23100",
-      seq: "ttgacggctagctcagtcctaggtacagtgctagc",
-      type: "dna",
-    },
+    // Commenting out iGEM test case since requests are getting blocked by cors at the moment.
+    // BBa_J23100: {
+    //   annotations: [],
+    //   name: "BBa_J23100",
+    //   seq: "ttgacggctagctcagtcctaggtacagtgctagc",
+    //   type: "dna",
+    // },
     NC_011521: {
       annotations: [
         {

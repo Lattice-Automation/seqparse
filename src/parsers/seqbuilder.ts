@@ -23,7 +23,7 @@ export default (fileInput: string, fileName: string) =>
         file.search(/.*?written by seqbuilder .*?[0-9.]+[^actg]+/i) +
           // @ts-ignore
           file.match(/.*?written by seqbuilder .*?[0-9.]+[^actg]+/i)[0].length,
-        file.length
+        file.length,
       )
       .match(/[actgyrwskmdvhbxn]+/gim)[0];
 

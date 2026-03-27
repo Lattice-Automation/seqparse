@@ -112,7 +112,7 @@ export default (options?: ParseOptions): Seq[] => {
               "2": -1,
               "3": "BIDIRECTIONAL",
               undefined: "NONE",
-            }[feature.directionality]
+            }[feature.directionality],
           ),
           end: maxEnd - 1,
           name: feature.name,
